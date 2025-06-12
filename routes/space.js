@@ -13,6 +13,10 @@ const verifyToken = require('../middlewares/authMiddleware.js');
 
 // Functions
 
+const sendError = (res, statusCode, error, message) => {
+  return res.status(statusCode).json({ error, message });
+}
+
 const getTaskById = async (taskId) => {
   const taskQuery = `
 SELECT 
@@ -140,6 +144,43 @@ const deleteTaskById = async (taskId) => {
   }
 }
 
+const findTableByName = async (tableName, spaceId) => {
+  if(!tableName || !spaceId) throw new Error('MISSING_ARGUMENTS')
+
+  try {
+    const query = `
+      SELECT * FROM space_tables
+      WHERE name = $1 AND space_id = $2
+    `
+    const result = await pool.query(query, [tableName, spaceId])
+
+    return result.rows[0]
+
+  } catch (error) {
+    throw error
+  }
+}
+const createNewTable = async (spaceId, tableName) => {
+  const idDone = 'col-' + uuidv4();
+
+  if(!spaceId || !tableName) throw new Error('MISSING_ARGUMENTS')
+  
+  const existingTable = await findTableByName(tableName, spaceId)
+  if(existingTable != null) throw new Error('TABLE_NAME_ALREADY_EXISTS')
+  try {
+    const spaceTablesQuery = `
+  INSERT INTO space_tables (space_id, id, name)
+  VALUES ($1, $2, $3)
+  RETURNING *;`
+
+    const result = await pool.query(spaceTablesQuery, [spaceId, idDone, tableName])
+    return result.rows[0]
+
+  } catch (error) {
+    throw error
+  }
+}
+
 router.post('/create/space', verifyToken, async (req, res) => {
   const userId = req.user.id;
   const { spaceName, spaceDescription } = req.body
@@ -164,24 +205,11 @@ router.post('/create/space', verifyToken, async (req, res) => {
 
     // Crear tres tablas (TODO, DOING, DONE)
 
-    const idTodo = 'col-' + uuidv4();
-    const idDoing = 'col-' + uuidv4();
-    const idDone = 'col-' + uuidv4();
+    const newTable0 = await createNewTable(newSpace.id, 'to do')
+    const newTable1 =  await createNewTable(newSpace.id, 'doing')
+    const newTable2 = await createNewTable(newSpace.id, 'done')
 
-
-    const spaceTablesQuery = `
-  INSERT INTO space_tables (space_id, id, name)
-  VALUES
-    ($1, $2, 'to do'),
-    ($1, $3, 'doing'),
-    ($1, $4, 'done')
-  RETURNING *;
-`;
-
-    const values = [newSpace.id, idTodo, idDoing, idDone];
-    const spaceTablesResult = await pool.query(spaceTablesQuery, values);
-
-    const newTables = spaceTablesResult.rows
+    const newTables = [newTable0, newTable1, newTable2]
 
     if (!newTables || newTables.length == 0) {
       return res.status(500).send("Internal server error")
@@ -359,9 +387,19 @@ WHERE id = $1;
 })
 
 router.post('/edit/table/name', verifyToken, async (req, res) => {
-  const { tableId, newTableName } = req.body;
+  const { tableId, newTableName, spaceId } = req.body;
 
   try {
+    const existingTable = await findTableByName(newTableName, spaceId)
+
+    if (existingTable != null && existingTable.id != tableId) {
+      return sendError(
+        res, 409,
+        'TABLE_NAME_ALREADY_EXISTS',
+        'A column with that name already exists in this space.'
+      )
+    }
+
     const query = `
       UPDATE space_tables
       SET name = $1
@@ -377,6 +415,27 @@ router.post('/edit/table/name', verifyToken, async (req, res) => {
     res.status(500).send('Internal server error');
   }
 });
+router.post('/create/table', verifyToken, async (req, res) => {
+  const {newTableName, spaceId} = req.body
+
+  try {
+    const existingTable = await findTableByName(newTableName, spaceId)
+
+    if(existingTable != null) {
+       return sendError(
+        res, 409,
+        'TABLE_NAME_ALREADY_EXISTS',
+        'A column with that name already exists in this space.'
+      )
+    }
+
+    const newTable = await createNewTable(spaceId, newTableName)
+    return res.status(200).json(newTable)
+    
+  } catch (error) {
+     res.status(500).send('Internal server error'); 
+  }
+})
 
 
 
