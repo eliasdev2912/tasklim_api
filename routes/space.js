@@ -112,7 +112,33 @@ GROUP BY t.id, t.space_id, t.body, t.created_at, u.id, u.username, u.avatarurl, 
     throw error
   }
 }
+const setNewComment = async (taskId, userId, body) => {
 
+  const commentQuery = `
+    INSERT INTO task_comments (
+      task_id, user_id, body
+    ) VALUES ( $1, $2, $3 )
+  `
+  try {
+    await pool.query(commentQuery, [taskId, userId, body])
+    const task = await getTaskById(taskId)
+    return task
+
+  } catch (error) {
+    throw error
+  }
+}
+const deleteTaskById = async (taskId) => {
+  const query = `
+    DELETE FROM tasks WHERE id = $1
+  `
+
+  try {
+    await pool.query(query, [taskId])
+  } catch (error) {
+    throw error
+  }
+}
 
 router.post('/create/space', verifyToken, async (req, res) => {
   const userId = req.user.id;
@@ -214,6 +240,32 @@ router.post('/create/task', verifyToken, async (req, res) => {
   }
 })
 
+
+router.delete('/delete/task/:id', verifyToken, async (req, res) => {
+  const taskId = req.params.id;
+
+  try {
+    deleteTaskById(taskId)
+    return res.status(200).send('OK')
+
+  } catch (error) {
+    console.error('Error al consultar la base de datos', error);
+    res.status(500).send('Internal server error')
+  }
+})
+
+router.post('/create/task/comment', verifyToken, async (req, res) => {
+  const { taskId, userId, body } = req.body;
+
+  try {
+    const updatedTask = await setNewComment(taskId, userId, body)
+    return res.status(200).json(updatedTask)
+  } catch (error) {
+    console.error('Error al consultar la base de datos', error);
+    res.status(500).send('Internal server error')
+  }
+})
+
 router.get('/get/task/:task_id', verifyToken, async (req, res) => {
   const taskId = req.params.task_id
   try {
@@ -238,9 +290,9 @@ WHERE id = $1;
   `
 
     await pool.query(query, [taskId, newTitle])
-    
-  const updatedTask = await getTaskById(taskId)
-  return res.status(200).json(updatedTask)
+
+    const updatedTask = await getTaskById(taskId)
+    return res.status(200).json(updatedTask)
 
   } catch (error) {
     console.error('Error al consultar la base de datos', error);
@@ -306,6 +358,27 @@ WHERE id = $1;
   }
 })
 
+router.post('/edit/table/name', verifyToken, async (req, res) => {
+  const { tableId, newTableName } = req.body;
+
+  try {
+    const query = `
+      UPDATE space_tables
+      SET name = $1
+      WHERE id = $2
+      RETURNING *;
+    `;
+
+    const result = await pool.query(query, [newTableName, tableId]);
+
+    res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send('Internal server error');
+  }
+});
+
+
 
 
 
@@ -353,7 +426,6 @@ router.get('/get/:id', verifyToken, async (req, res) => {
     res.status(500).send('Internal server error')
   }
 })
-
 
 
 module.exports = router;
