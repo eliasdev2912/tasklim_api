@@ -17,21 +17,21 @@ SELECT
   t.table_id,
 
   -- Tags: subquery aislada para evitar cross join con comments
-  COALESCE(
-    (
-      SELECT json_agg(
-        json_build_object(
-          'id', tt.id,
-          'color', tt.color,
-          'name', tt.name,
-          'task_id', tt.task_id
-        )
+ COALESCE(
+  (
+    SELECT json_agg(
+      json_build_object(
+        'id', tg.id,
+        'color', tg.color,
+        'name', tg.name
       )
-      FROM task_tags tt
-      WHERE tt.task_id = t.id
-    ),
-    '[]'
-  ) AS tags,
+    )
+    FROM task_tags tt
+    JOIN tags tg ON tg.id = tt.tag_id
+    WHERE tt.task_id = t.id
+  ),
+  '[]'
+) AS tags,
 
   -- Creador
   json_build_object(
@@ -91,22 +91,24 @@ SELECT
   t.updated_at,
   t.table_id,
 
-  -- Tags: subquery aislada
-  COALESCE(
-    (
-      SELECT json_agg(
-        json_build_object(
-          'id', tt.id,
-          'color', tt.color,
-          'name', tt.name,
-          'task_id', tt.task_id
-        )
+-- Tags: solo los asociados a esta tarea
+COALESCE(
+  (
+    SELECT json_agg(
+      json_build_object(
+        'id', tg.id,
+        'color', tg.color,
+        'name', tg.name
       )
-      FROM task_tags tt
-      WHERE tt.task_id = t.id
-    ),
-    '[]'
-  ) AS tags,
+    )
+    FROM task_tags tt
+    JOIN tags tg ON tg.id = tt.tag_id
+    WHERE tt.task_id = t.id
+  ),
+  '[]'
+) AS tags,
+
+
 
   -- Creador de la tarea
   json_build_object(
@@ -186,25 +188,89 @@ const deleteTaskById = async (taskId) => {
   }
 }
 
-const createTaskTag = async (taskId, tagName, tagColor) => {
-  if (!taskId || !tagName || !tagColor) throw new Error('MISSING_ARGUMENTS')
 
-  const query =
-    `
-    INSERT INTO task_tags (id, name, color, task_id)
-    VALUES ($1, $2, $3, $4)
-    RETURNING *
-  `
-  const newTagId = uuidv4()
+const findTagByName = async (tagName, spaceId) => {
+  if (!tagName || !spaceId) throw new Error('MISSING_ARGUMENTS')
 
   try {
-
-    const newTag = await pool.query(query, [newTagId, tagName, tagColor, taskId])
-    return newTag.rows[0]
-
+    const query = `SELECT * FROM tags WHERE name = $1 AND space_id = $2`
+    const result = await pool.query(query, [tagName, spaceId])
+    return result.rows[0]
   } catch (error) {
     throw error
   }
 }
 
-module.exports = { getTaskById, getTasksBySpaceId, setNewComment, deleteTaskById, createTaskTag }; 
+
+
+const findOrCreateTag = async (spaceId, taskId, tagName, tagColor) => {
+  if (!taskId || !tagName || !tagColor || !spaceId) throw new Error('MISSING_ARGUMENTS')
+
+const client = await pool.connect();
+
+  try {
+
+    const task = await getTaskById(taskId)
+    if (!task) throw new Error('TASK_DONT_EXIST')
+
+    const upperCaseTagName = tagName.toUpperCase()
+
+    const existingTag = await findTagByName(upperCaseTagName, spaceId)
+
+    if (existingTag != null) {
+      const tagInTaskQuery =
+        `
+    SELECT * FROM task_tags WHERE task_id = $1 AND tag_id = $2
+    `
+      const tagInTaskResult = await client.query(tagInTaskQuery, [taskId, existingTag.id])
+
+      if (tagInTaskResult.rows.length > 0) {
+        throw new Error('TAG_ALREADY_EXIST_IN_THIS_TASK')
+      }
+
+      // Inserta la relación porque NO existe aún
+      const insertTaskTagQuery = `
+    INSERT INTO task_tags (task_id, tag_id)
+    VALUES ($1, $2)
+    RETURNING *
+  `;
+      const newTaskTagResult = await client.query(insertTaskTagQuery, [taskId, existingTag.id]);
+
+      return { tag: existingTag, taskTag: newTaskTagResult.rows[0] };
+    }
+
+    const tagQuery =
+      `
+    INSERT INTO tags (id, space_id, name, color)
+    VALUES ($1, $2, $3, $4)
+    RETURNING *
+  `
+    const newTagId = uuidv4()
+
+    const taskTagQuery =
+      `
+    INSERT INTO task_tags (task_id, tag_id)
+    VALUES ($1, $2)
+    RETURNING *
+  `
+
+    await client.query('BEGIN');
+
+    const newTagResult = await client.query(tagQuery, [newTagId, spaceId, upperCaseTagName, tagColor])
+    const newTag = newTagResult.rows[0]
+
+    const taskTagResult = await client.query(taskTagQuery, [taskId, newTag.id])
+    const taskTag = taskTagResult.rows[0]
+
+    await client.query('COMMIT');
+
+    return { tag: newTag, taskTag: taskTag }
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { getTaskById, getTasksBySpaceId, setNewComment, deleteTaskById, findOrCreateTag }; 
