@@ -15,8 +15,12 @@ const {
   getTaskById,
   setNewComment,
   deleteTaskById,
-  findOrCreateTag
 } = require('../utilities/tasksUtilities.js');
+
+const {
+  findOrCreateTag,
+  deleteTaskTag
+} = require('../utilities/tagsUtilities.js')
 const { sendError } = require('../utilities/errorsUtilities.js')
 
 
@@ -233,9 +237,9 @@ WHERE id = $1;
 
 router.post('/find_or_create/tag', verifyToken, async (req, res) => {
   const { taskId, tagName, tagColor, spaceId } = req.body;
-  
+
   if (!taskId || !tagName || !tagColor || !spaceId) {
-    if(!taskId) {
+    if (!taskId) {
       return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id')
     }
     else if (!tagName) {
@@ -252,6 +256,25 @@ router.post('/find_or_create/tag', verifyToken, async (req, res) => {
   try {
     const tag = await findOrCreateTag(spaceId, taskId, tagName, tagColor);
     return res.status(200).json(tag)
+  } catch (error) {
+    return sendError(
+      res, 500, error, 'Error querying the database',
+    )
+  }
+})
+
+router.post('/delete/tag', verifyToken, async (req, res) => {
+  const { taskId, tagId } = req.body;
+
+  if (!taskId || !tagId) {
+    return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id or tag_id')
+  }
+
+  try {
+    await deleteTaskTag(taskId, tagId)
+
+    res.json({ success: true });
+
   } catch (error) {
     return sendError(
       res, 500, error, 'Error querying the database',
