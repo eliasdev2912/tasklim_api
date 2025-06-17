@@ -2,6 +2,21 @@ const pool = require('../database.js')
 
 const { v4: uuidv4 } = require('uuid');
 
+
+
+const taskExists = async (taskId) => {
+  if (!taskId) throw new Error('TASK_ID_IS_REQUIRED');
+
+  const query = `
+    SELECT EXISTS (
+      SELECT 1 FROM tasks WHERE id = $1
+    )
+  `;
+
+  const result = await pool.query(query, [taskId]);
+  return result.rows[0].exists; // ✅ esto es true o false
+};
+
 const getTaskById = async (taskId) => {
   if (!taskId) throw new Error('MISSING_ARGUMENTS')
 
@@ -189,88 +204,11 @@ const deleteTaskById = async (taskId) => {
 }
 
 
-const findTagByName = async (tagName, spaceId) => {
-  if (!tagName || !spaceId) throw new Error('MISSING_ARGUMENTS')
 
-  try {
-    const query = `SELECT * FROM tags WHERE name = $1 AND space_id = $2`
-    const result = await pool.query(query, [tagName, spaceId])
-    return result.rows[0]
-  } catch (error) {
-    throw error
-  }
-}
-
-
-
-const findOrCreateTag = async (spaceId, taskId, tagName, tagColor) => {
-  if (!taskId || !tagName || !tagColor || !spaceId) throw new Error('MISSING_ARGUMENTS')
-
-const client = await pool.connect();
-
-  try {
-
-    const task = await getTaskById(taskId)
-    if (!task) throw new Error('TASK_DONT_EXIST')
-
-    const upperCaseTagName = tagName.toUpperCase()
-
-    const existingTag = await findTagByName(upperCaseTagName, spaceId)
-
-    if (existingTag != null) {
-      const tagInTaskQuery =
-        `
-    SELECT * FROM task_tags WHERE task_id = $1 AND tag_id = $2
-    `
-      const tagInTaskResult = await client.query(tagInTaskQuery, [taskId, existingTag.id])
-
-      if (tagInTaskResult.rows.length > 0) {
-        throw new Error('TAG_ALREADY_EXIST_IN_THIS_TASK')
-      }
-
-      // Inserta la relación porque NO existe aún
-      const insertTaskTagQuery = `
-    INSERT INTO task_tags (task_id, tag_id)
-    VALUES ($1, $2)
-    RETURNING *
-  `;
-      const newTaskTagResult = await client.query(insertTaskTagQuery, [taskId, existingTag.id]);
-
-      return { tag: existingTag, taskTag: newTaskTagResult.rows[0] };
-    }
-
-    const tagQuery =
-      `
-    INSERT INTO tags (id, space_id, name, color)
-    VALUES ($1, $2, $3, $4)
-    RETURNING *
-  `
-    const newTagId = uuidv4()
-
-    const taskTagQuery =
-      `
-    INSERT INTO task_tags (task_id, tag_id)
-    VALUES ($1, $2)
-    RETURNING *
-  `
-
-    await client.query('BEGIN');
-
-    const newTagResult = await client.query(tagQuery, [newTagId, spaceId, upperCaseTagName, tagColor])
-    const newTag = newTagResult.rows[0]
-
-    const taskTagResult = await client.query(taskTagQuery, [taskId, newTag.id])
-    const taskTag = taskTagResult.rows[0]
-
-    await client.query('COMMIT');
-
-    return { tag: newTag, taskTag: taskTag }
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error
-  } finally {
-    client.release();
-  }
-}
-
-module.exports = { getTaskById, getTasksBySpaceId, setNewComment, deleteTaskById, findOrCreateTag }; 
+module.exports = {
+  getTaskById,
+  getTasksBySpaceId,
+  setNewComment,
+  deleteTaskById,
+  taskExists,
+}; 
