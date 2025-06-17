@@ -14,8 +14,12 @@ const verifyToken = require('../middlewares/authMiddleware.js');
 const {
   getTaskById,
   setNewComment,
-  deleteTaskById
+  deleteTaskById,
+  createTaskTag
 } = require('../utilities/tasksUtilities.js');
+const { sendError } = require('../utilities/errorsUtilities.js')
+
+
 
 
 
@@ -23,6 +27,10 @@ router.post('/create', verifyToken, async (req, res) => {
   const userId = req.user.id;
 
   const { taskTitle, spaceId, tableId } = req.body;
+
+  if (!taskTitle || !spaceId || !tableId) {
+    return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_title, space_id or table_id')
+  }
 
   const taskId = 'task-' + uuidv4()
   try {
@@ -55,6 +63,11 @@ router.post('/create', verifyToken, async (req, res) => {
 router.delete('/delete/:id', verifyToken, async (req, res) => {
   const taskId = req.params.id;
 
+  if (!taskId) {
+    return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id')
+  }
+
+
   try {
     deleteTaskById(taskId)
     return res.status(200).send('OK')
@@ -66,8 +79,13 @@ router.delete('/delete/:id', verifyToken, async (req, res) => {
   }
 })
 
+
 router.post('/create/comment', verifyToken, async (req, res) => {
   const { taskId, userId, body } = req.body;
+
+  if (!taskId || !userId || !body) {
+    return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id, user_id or comment_body')
+  }
 
   try {
     const updatedTask = await setNewComment(taskId, userId, body)
@@ -79,8 +97,15 @@ router.post('/create/comment', verifyToken, async (req, res) => {
   }
 })
 
+
 router.get('/get/:task_id', verifyToken, async (req, res) => {
   const taskId = req.params.task_id
+
+  if (!taskId) {
+    return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id')
+  }
+
+
   try {
 
     const task = await getTaskById(taskId)
@@ -93,14 +118,22 @@ router.get('/get/:task_id', verifyToken, async (req, res) => {
     )
   }
 })
+
+
 router.post('/edit/title', verifyToken, async (req, res) => {
   const { taskId, newTitle } = req.body
+
+  if (!taskId || !newTitle) {
+    return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id or new_title')
+  }
 
   try {
     const query = `
   UPDATE tasks
-SET title = $2
-WHERE id = $1;
+  SET 
+   title = $2,
+   updated_at = NOW()
+  WHERE id = $1;
   `
 
     await pool.query(query, [taskId, newTitle])
@@ -114,14 +147,23 @@ WHERE id = $1;
     )
   }
 })
+
+
 router.post('/edit/description', verifyToken, async (req, res) => {
   const { taskId, newDescription } = req.body
+
+  if (!taskId) {
+    return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id')
+  }
+
 
   try {
     const query = `
   UPDATE tasks
-SET description = $2
-WHERE id = $1;
+  SET 
+   description = $2,
+   updated_at = NOW()
+  WHERE id = $1;
   `
 
     await pool.query(query, [taskId, newDescription])
@@ -135,14 +177,22 @@ WHERE id = $1;
     )
   }
 })
+
+
 router.post('/edit/body', verifyToken, async (req, res) => {
   const { taskId, newBody } = req.body
+
+  if (!taskId) {
+    return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id')
+  }
 
   try {
     const query = `
   UPDATE tasks
-SET body = $2
-WHERE id = $1;
+  SET 
+  body = $2,
+  updated_at = NOW()
+  WHERE id = $1;
   `
     await pool.query(query, [taskId, newBody])
 
@@ -156,9 +206,13 @@ WHERE id = $1;
   }
 })
 
+
 router.post('/edit/table', verifyToken, async (req, res) => {
   const { taskId, newTableId } = req.body
 
+  if (!taskId || !newTableId) {
+    return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id or new_table_id')
+  }
   try {
     const query = `
   UPDATE tasks
@@ -169,6 +223,24 @@ WHERE id = $1;
     const queryResult = await pool.query(query, [taskId, newTableId])
     return res.status(200).json(queryResult.rows[0])
 
+  } catch (error) {
+    return sendError(
+      res, 500, error, 'Error querying the database',
+    )
+  }
+})
+
+
+router.post('/create/tag', verifyToken, async (req, res) => {
+  const { taskId, tagName, tagColor } = req.body;
+
+  if (!taskId || !tagName || !tagColor) {
+    return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id, tag_id or tag_color')
+  }
+
+  try {
+    const newTag = await createTaskTag(taskId, tagName, tagColor);
+    return res.status(200).json(newTag)
   } catch (error) {
     return sendError(
       res, 500, error, 'Error querying the database',

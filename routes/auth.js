@@ -11,7 +11,9 @@ require('dotenv').config();
 // Middlewares
 const verifyToken = require('../middlewares/authMiddleware.js');
 
+// Functions
 
+const { sendError } = require('../utilities/errorsUtilities.js')
 
 
 router.get('/validate_token', verifyToken, async (req, res) => {
@@ -28,9 +30,8 @@ router.get('/validate_token', verifyToken, async (req, res) => {
         const result = await pool.query(query, [clientId]);
 
         res.json(result.rows[0]);
-    } catch (err) {
-        console.error('Error al consultar la base de datos', err);
-        res.status(500).send('Internal server error')
+    } catch (error) {
+        return sendError(res, 500, error, 'Internal server error')
     }
 })
 
@@ -42,7 +43,7 @@ router.get('/user/:id', verifyToken, async (req, res) => {
 FROM users
 WHERE id = $1;
 `
-       const spacesQuery = `
+    const spacesQuery = `
 SELECT
   b.id AS space_id,
   b.space_name,
@@ -69,10 +70,9 @@ WHERE m.user_id = $1;
     try {
         const userResult = await pool.query(userQuery, [userId])
         const spacesResult = await pool.query(spacesQuery, [userId]);
-        res.json({user: userResult.rows[0], spaces: spacesResult.rows});
-    } catch (err) {
-        console.error('Error fetching user spaces:', err);
-        res.status(500).send('Internal server error');
+        res.json({ user: userResult.rows[0], spaces: spacesResult.rows });
+    } catch (error) {
+        return sendError(res, 500, error, 'Internal server error')
     }
 });
 
@@ -82,11 +82,21 @@ router.post('/signin', async (req, res) => {
 
         // Basic validation
         if (!username || !email || !password || !passwordConfirm) {
-            return res.status(400).send('Required fields are missing');
+            return sendError(
+                res,
+                400,
+                'MISSING_REQUIRED_FIELDS',
+                'Missing required fields: username, email, password, or password confirmation'
+            )
         }
 
         if (password !== passwordConfirm) {
-            return res.status(400).send('Passwords do not match');
+            return sendError(
+                res,
+                400,
+                'PASSWORD_CONFIRMATION_MISMATCH',
+                'Password confirmation does not match'
+            )
         }
 
         // Hash the password
@@ -94,10 +104,10 @@ router.post('/signin', async (req, res) => {
 
         // Create user in the database (safe parameterized query)
         const result = await pool.query(
-            `INSERT INTO users (username, email, password, avatarurl)
-       VALUES ($1, $2, $3, $4)
+            `INSERT INTO users (username, email, password)
+       VALUES ($1, $2, $3)
        RETURNING id, username, email, avatarurl`,
-            [username, email, hashedPassword, 'placeholder-url']
+            [username, email, hashedPassword]
         );
 
         const newUser = result.rows[0];
@@ -120,8 +130,8 @@ router.post('/signin', async (req, res) => {
             },
         });
     } catch (error) {
-        console.error('Error creating user:', error);
-        res.status(500).send('Internal server error');
+        return sendError(res, 500, error, 'Internal server error')
+
     }
 });
 
@@ -131,7 +141,12 @@ router.post('/login', async (req, res) => {
         const { identifier, password } = req.body;
 
         if (!identifier || !password) {
-            return res.status(400).send('Required fields are missing');
+            return sendError(
+                res,
+                400,
+                'MISSING_REQUIRED_FIELDS',
+                'Missing required fields: identifier or password'
+            )
         }
 
         const query = `
@@ -145,13 +160,23 @@ router.post('/login', async (req, res) => {
         const user = result.rows[0];
 
         if (!user) {
-            return res.status(404).send("User not found");
+            return sendError(
+                res,
+                404,
+                'USER_NOT_FOUND',
+                'User not found'
+            );
         }
 
         const validPassword = await bcrypt.compare(password, user.password);
 
         if (!validPassword) {
-            return res.status(401).send("Invalid password");
+            return sendError(
+                res,
+                401,
+                'INVALID_CREDENTIALS',
+                'Invalid password'
+            );
         }
 
         const token = jwt.sign(
@@ -171,8 +196,7 @@ router.post('/login', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error during login:', error);
-        res.status(500).send('Internal server error');
+        return sendError(res, 500, error, 'Internal server error')
     }
 });
 

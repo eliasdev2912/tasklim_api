@@ -34,6 +34,14 @@ router.post('/create', verifyToken, async (req, res) => {
   const userId = req.user.id;
   const { spaceName, spaceDescription } = req.body
 
+  if (!spaceName || !spaceDescription) {
+    return sendError(
+      res,
+      400,
+      'MISSING_REQUIRED_FIELDS',
+      'Missing required fields: space_name or space_description'
+    )
+  }
 
   try {
 
@@ -89,14 +97,22 @@ router.post('/create', verifyToken, async (req, res) => {
 
 router.get('/get/:id', verifyToken, async (req, res) => {
   const spaceId = parseInt(req.params.id, 10);  // o donde venga spaceId
-  console.log('SPACE_ID: ' + spaceId)
 
+  if(!spaceId) {
+    return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: space_id')
+  }
   try {
     const spaceQuery = `
   SELECT *
   FROM spaces
   WHERE id = $1;
 `;
+const spaceResult = await pool.query(spaceQuery, [spaceId])
+
+    if(!spaceResult.rows[0] || spaceResult.rowCount == 0) {
+      return sendError(res, 404, 'SPACE_NOT_FOUND', `Space ${spaceId} not found`)
+    }
+
     const membersQuery = `
   SELECT 
     u.id,
@@ -110,13 +126,13 @@ router.get('/get/:id', verifyToken, async (req, res) => {
 
     const tablesQuery = `
       SELECT * FROM space_tables
-      WHERE space_id = $1;      
+      WHERE space_id = $1
+      ORDER BY table_position ASC;      
     `
 
     const tasks = await getTasksBySpaceId(spaceId)
 
 
-    const spaceResult = await pool.query(spaceQuery, [spaceId])
     const membersResult = await pool.query(membersQuery, [spaceId])
     const tablesResult = await pool.query(tablesQuery, [spaceId])
 
@@ -138,6 +154,10 @@ router.post('/create/invitation_code', verifyToken, async (req, res) => {
   const { spaceId } = req.body;
   const expiresIn = '1h'; // o por minutos, horas, etc.
 
+  if(!spaceId) {
+        return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: space_id')
+  }
+
   const token = jwt.sign(
     { spaceId },
     process.env.JWT_INVITE_SECRET,
@@ -151,12 +171,15 @@ router.get('/verify/invitation/:token', verifyToken, async (req, res) => {
   const { token } = req.params;
   const userId = req.user.id;
 
+  if(!token) {
+        return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: space_code')
+  }
   try {
     // Verifica y extrae el payload
     const payload = jwt.verify(token, process.env.JWT_INVITE_SECRET);
 
     if (!payload.spaceId) {
-      return sendError(res, 400, 'INVALID_PAYLOAD', 'Token payload missing spaceId');
+      return sendError(res, 400, 'INVALID_PAYLOAD', 'Token payload missing space_id');
     }
 
     // Verifica si ya es miembro

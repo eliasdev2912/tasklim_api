@@ -13,7 +13,7 @@ const verifyToken = require('../middlewares/authMiddleware.js');
 
 
 // Functions
-const { findTableByName, createNewTable } = require('../utilities/tablesUtilities.js')
+const { findTableByName, createNewTable, changeTablePosition } = require('../utilities/tablesUtilities.js')
 const { sendError } = require('../utilities/errorsUtilities.js')
 
 
@@ -21,6 +21,10 @@ const { sendError } = require('../utilities/errorsUtilities.js')
 
 router.post('/create', verifyToken, async (req, res) => {
   const { newTableName, spaceId } = req.body
+
+  if (!newTableName || !spaceId) {
+    return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: new_table_name or space_id')
+  }
 
   try {
     const existingTable = await findTableByName(newTableName, spaceId)
@@ -46,6 +50,10 @@ router.post('/create', verifyToken, async (req, res) => {
 
 router.post('/edit/name', verifyToken, async (req, res) => {
   const { tableId, newTableName, spaceId } = req.body;
+
+    if (!newTableName || !spaceId || !tableId) {
+    return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: new_table_name, table_id or space_id')
+  }
 
   try {
     const existingTable = await findTableByName(newTableName, spaceId)
@@ -74,6 +82,47 @@ router.post('/edit/name', verifyToken, async (req, res) => {
     )
   }
 });
+
+router.post('/edit/color', verifyToken, async (req, res) => {
+  const {newColor, tableId} = req.body;
+
+  if(!tableId) {
+        return sendError(res, 
+          400, 
+          'MISSING_REQUIRED_FIELDS', 
+          'Missing required fields: table_id'
+        )
+  }
+
+  try {
+    const query = `
+    UPDATE space_tables
+    SET color = $1
+    WHERE id = $2
+    RETURNING *
+    `
+    const {rows} = await pool.query(query, [newColor, tableId])
+
+    return res.status(200).json(rows[0])
+
+  } catch (error) {
+     return sendError(
+      res, 500, error, 'Error querying the database',
+    )
+  }
+})
+
+router.post('/edit/position', verifyToken, async (req, res) => {
+  const {spaceId, tableId, tableFromIndex, tableToIndex, neighborTableId} = req.body
+
+  try {
+    await changeTablePosition(spaceId, tableId, tableFromIndex, tableToIndex, neighborTableId)
+  } catch (error) {
+    return sendError(
+      res, 500, error, 'Error querying the database',
+    )
+  }
+})
 
 
 
