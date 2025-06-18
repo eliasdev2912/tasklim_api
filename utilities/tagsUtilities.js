@@ -2,7 +2,7 @@ const pool = require('../database.js')
 
 const { v4: uuidv4 } = require('uuid');
 
-const { getTaskById, taskExists } = require('./tasksUtilities.js')
+const { getTaskById, taskExists, touchTask } = require('./tasksUtilities.js')
 
 
 const findTagByName = async (tagName, spaceId) => {
@@ -60,10 +60,9 @@ const findOrCreateTag = async (spaceId, taskId, tagName, tagColor) => {
         const existingTag = await findTagByName(upperCaseTagName, spaceId)
 
         if (existingTag != null) {
-            const tagInTaskQuery =
-                `
-    SELECT * FROM task_tags WHERE task_id = $1 AND tag_id = $2
-    `
+            const tagInTaskQuery = `
+            SELECT * FROM task_tags WHERE task_id = $1 AND tag_id = $2`
+
             const tagInTaskResult = await client.query(tagInTaskQuery, [taskId, existingTag.id])
 
             if (tagInTaskResult.rows.length > 0) {
@@ -72,29 +71,32 @@ const findOrCreateTag = async (spaceId, taskId, tagName, tagColor) => {
 
             // Inserta la relación porque NO existe aún
             const insertTaskTagQuery = `
-    INSERT INTO task_tags (task_id, tag_id)
-    VALUES ($1, $2)
-    RETURNING *
-  `;
+            INSERT INTO task_tags (task_id, tag_id)
+            VALUES ($1, $2)
+            RETURNING *
+            `;
+
+            const updatedTask = await touchTask(taskId)
+
             const newTaskTagResult = await client.query(insertTaskTagQuery, [taskId, existingTag.id]);
 
-            return { tag: existingTag, taskTag: newTaskTagResult.rows[0] };
+            return { tag: existingTag, taskTag: newTaskTagResult.rows[0], updatedTask };
         }
 
         const tagQuery =
             `
-    INSERT INTO tags (id, space_id, name, color)
-    VALUES ($1, $2, $3, $4)
-    RETURNING *
-  `
+         INSERT INTO tags (id, space_id, name, color)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *
+        `
         const newTagId = uuidv4()
 
         const taskTagQuery =
             `
-    INSERT INTO task_tags (task_id, tag_id)
-    VALUES ($1, $2)
-    RETURNING *
-  `
+         INSERT INTO task_tags (task_id, tag_id)
+         VALUES ($1, $2)
+         RETURNING *
+        `
 
         await client.query('BEGIN');
 
@@ -104,9 +106,12 @@ const findOrCreateTag = async (spaceId, taskId, tagName, tagColor) => {
         const taskTagResult = await client.query(taskTagQuery, [taskId, newTag.id])
         const taskTag = taskTagResult.rows[0]
 
+        const updatedTask = await touchTask(taskId)
+
+
         await client.query('COMMIT');
 
-        return { tag: newTag, taskTag: taskTag }
+        return { tag: newTag, taskTag: taskTag, updatedTask }
     } catch (error) {
         await client.query('ROLLBACK');
         throw error
@@ -116,47 +121,51 @@ const findOrCreateTag = async (spaceId, taskId, tagName, tagColor) => {
 }
 
 const deleteTaskTag = async (taskId, tagId) => {
-  if (!taskId || !tagId) {
-    throw new Error('MISSING_ARGUMENTS');
-  }
+    if (!taskId || !tagId) {
+        throw new Error('MISSING_ARGUMENTS');
+    }
 
-  const tagExists_ = await tagExists(tagId);
-  const taskExists_ = await taskExists(taskId);
+    const tagExists_ = await tagExists(tagId);
+    const taskExists_ = await taskExists(taskId);
 
-  if (!tagExists_) {
-    throw new Error('TAG_NOT_FOUND');
-  } else if (!taskExists_) {
-    throw new Error('TASK_NOT_FOUND');
-  }
+    if (!tagExists_) {
+        throw new Error('TAG_NOT_FOUND');
+    } else if (!taskExists_) {
+        throw new Error('TASK_NOT_FOUND');
+    }
 
-  const client = await pool.connect();
+    const client = await pool.connect();
 
-  try {
-    await client.query('BEGIN');
+    try {
+        await client.query('BEGIN');
 
-    // 1️⃣ Borra SOLO la relación task-tag específica
-    const deleteTaskTagQuery = `
+        // 1️⃣ Borra SOLO la relación task-tag específica
+        const deleteTaskTagQuery = `
       DELETE FROM task_tags 
       WHERE tag_id = $1 AND task_id = $2
     `;
-    await client.query(deleteTaskTagQuery, [tagId, taskId]);
+        await client.query(deleteTaskTagQuery, [tagId, taskId]);
 
-    // 2️⃣ Verifica cuántas quedan después de borrarla
-    const tagTaskCount = await getTagTaskCount(tagId);
 
-    if (tagTaskCount === 0) {
-      // Si quedó huérfano: eliminar tag
-      const deleteTagQuery = `DELETE FROM tags WHERE id = $1`;
-      await client.query(deleteTagQuery, [tagId]);
+        await client.query('COMMIT');
+
+        // 2️⃣ Verifica cuántas quedan después de borrarla
+        const tagTaskCount = await getTagTaskCount(tagId);
+        if (tagTaskCount == 0) {
+            // Si quedó huérfano: eliminar tag
+            const deleteTagQuery = `DELETE FROM tags WHERE id = $1`;
+            await client.query(deleteTagQuery, [tagId]);
+        }
+
+        const updatedTask = await touchTask(taskId)
+        return { updatedTask }
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
     }
-
-    await client.query('COMMIT');
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
 };
 
 

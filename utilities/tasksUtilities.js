@@ -203,6 +203,26 @@ const deleteTaskById = async (taskId) => {
   }
 }
 
+const touchTask = async (taskId) => {
+  if (!taskId) throw new Error('MISSING_ARGUMENTS')
+
+  const updateTaskQuery = `
+        UPDATE tasks
+        SET updated_at = NOW()
+        WHERE id = $1;
+        
+        `
+  try {
+    await pool.query(updateTaskQuery, [taskId])
+
+    const updatedTask = await getTaskById(taskId)
+    return updatedTask
+    
+  } catch (error) {
+    throw error
+  }
+}
+
 
 
 module.exports = {
@@ -211,4 +231,5 @@ module.exports = {
   setNewComment,
   deleteTaskById,
   taskExists,
+  touchTask
 }; 
