@@ -15,6 +15,7 @@ const {
   getTaskById,
   setNewComment,
   deleteTaskById,
+  touchTask,
 } = require('../utilities/tasksUtilities.js');
 
 const {
@@ -224,8 +225,11 @@ SET table_id = $2
 WHERE id = $1;
   `
 
-    const queryResult = await pool.query(query, [taskId, newTableId])
-    return res.status(200).json(queryResult.rows[0])
+    await pool.query(query, [taskId, newTableId])
+    await touchTask(taskId)
+    const updatedTask = await getTaskById(taskId)
+
+    return res.status(200).json(updatedTask)
 
   } catch (error) {
     return sendError(
@@ -271,9 +275,9 @@ router.post('/delete/tag', verifyToken, async (req, res) => {
   }
 
   try {
-    await deleteTaskTag(taskId, tagId)
+    const result = await deleteTaskTag(taskId, tagId)
 
-    res.json({ success: true });
+    res.status(200).json(result);
 
   } catch (error) {
     return sendError(
