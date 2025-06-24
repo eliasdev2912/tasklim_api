@@ -117,6 +117,8 @@ router.post('/edit/position', verifyToken, async (req, res) => {
 
   try {
     await changeTablePosition(spaceId, tableId, tableFromIndex, tableToIndex, neighborTableId)
+
+    res.send('success')
   } catch (error) {
     return sendError(
       res, 500, error, 'Error querying the database',

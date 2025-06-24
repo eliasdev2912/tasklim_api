@@ -106,12 +106,11 @@ const findOrCreateTag = async (spaceId, taskId, tagName, tagColor) => {
         const taskTagResult = await client.query(taskTagQuery, [taskId, newTag.id])
         const taskTag = taskTagResult.rows[0]
 
-        const updatedTask = await touchTask(taskId)
-
+        await touchTask(taskId)
 
         await client.query('COMMIT');
 
-        return { tag: newTag, taskTag: taskTag, updatedTask }
+        return { tag: newTag, taskTag: taskTag }
     } catch (error) {
         await client.query('ROLLBACK');
         throw error
@@ -168,11 +167,24 @@ const deleteTaskTag = async (taskId, tagId) => {
     }
 };
 
+const getSpaceTags = async (spaceId) => {
+    if(!spaceId) throw new Error('MISSING_ARGUMENTS')
+
+    const query = `
+    SELECT * FROM tags WHERE space_id = $1;
+    `
+
+    const queryResult = await pool.query(query, [spaceId])
+
+    return queryResult.rows
+}
+
 
 
 module.exports = {
     findOrCreateTag,
     tagExists,
     findTagByName,
-    deleteTaskTag
+    deleteTaskTag,
+    getSpaceTags
 }
