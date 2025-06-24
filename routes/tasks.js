@@ -86,7 +86,8 @@ router.delete('/delete/:id', verifyToken, async (req, res) => {
 
 
 router.post('/create/comment', verifyToken, async (req, res) => {
-  const { taskId, userId, body } = req.body;
+  const { taskId, body } = req.body;
+  const userId = req.user.id;
 
   if (!taskId || !userId || !body) {
     return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id, user_id or comment_body')
@@ -258,8 +259,10 @@ router.post('/find_or_create/tag', verifyToken, async (req, res) => {
   }
 
   try {
-    const tag = await findOrCreateTag(spaceId, taskId, tagName, tagColor);
-    return res.status(200).json(tag)
+    const result = await findOrCreateTag(spaceId, taskId, tagName, tagColor);
+    const updatedTask = await getTaskById(taskId);
+
+    return res.status(200).json({tag: result.tag, taskTag: result.taskTag, updatedTask})
   } catch (error) {
     return sendError(
       res, 500, error, 'Error querying the database',

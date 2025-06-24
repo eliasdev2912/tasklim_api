@@ -173,6 +173,7 @@ ORDER BY t.updated_at DESC;
 const setNewComment = async (taskId, userId, body) => {
   if (!taskId || !userId || !body) throw new Error('MISSING_ARGUMENTS')
 
+  const client = await pool.connect();
 
   const commentQuery = `
     INSERT INTO task_comments (
@@ -180,12 +181,23 @@ const setNewComment = async (taskId, userId, body) => {
     ) VALUES ( $1, $2, $3 )
   `
   try {
-    await pool.query(commentQuery, [taskId, userId, body])
+
+    await client.query('BEGIN');
+
+    await client.query(commentQuery, [taskId, userId, body])
+    await touchTask(taskId)
+    
+    await client.query('COMMIT');
+    
     const task = await getTaskById(taskId)
+    
     return task
 
   } catch (error) {
+    await client.query('ROLLBACK');
     throw error
+  } finally {
+    client.release()
   }
 }
 const deleteTaskById = async (taskId) => {
@@ -217,7 +229,7 @@ const touchTask = async (taskId) => {
 
     const updatedTask = await getTaskById(taskId)
     return updatedTask
-    
+
   } catch (error) {
     throw error
   }
