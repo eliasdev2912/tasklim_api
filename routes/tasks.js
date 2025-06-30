@@ -16,6 +16,7 @@ const {
   setNewComment,
   deleteTaskById,
   touchTask,
+  deleteCommentById,
 } = require('../utilities/tasksUtilities.js');
 
 const {
@@ -96,6 +97,25 @@ router.post('/create/comment', verifyToken, async (req, res) => {
   try {
     const updatedTask = await setNewComment(taskId, userId, body)
     return res.status(200).json(updatedTask)
+  } catch (error) {
+    return sendError(
+      res, 500, error, 'Error querying the database',
+    )
+  }
+})
+
+router.post('/delete/comment/:comment_id', verifyToken, async (req, res) => {
+  const commentId = req.params.comment_id;
+
+   if (!commentId) {
+    return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: comment_id')
+  }
+
+
+  try {
+    const updatedTask = await deleteCommentById(commentId)
+    return res.status(200).json(updatedTask)
+
   } catch (error) {
     return sendError(
       res, 500, error, 'Error querying the database',

@@ -13,7 +13,7 @@ const verifyToken = require('../middlewares/authMiddleware.js');
 
 
 // Functions
-const { findTableByName, createNewTable, changeTablePosition } = require('../utilities/tablesUtilities.js')
+const { findTableByName, createNewTable, changeTablePosition, findTableById, changeTableFormat } = require('../utilities/tablesUtilities.js')
 const { sendError } = require('../utilities/errorsUtilities.js')
 
 
@@ -73,9 +73,10 @@ router.post('/edit/name', verifyToken, async (req, res) => {
       RETURNING *;
     `;
 
-    const result = await pool.query(query, [newTableName, tableId]);
+    await pool.query(query, [newTableName, tableId]);
+    const updatedTable = await findTableById(tableId)
 
-    res.status(200).json(result.rows[0]);
+    res.status(200).json(updatedTable);
   } catch (error) {
     return sendError(
       res, 500, error, 'Error querying the database',
@@ -87,11 +88,11 @@ router.post('/edit/color', verifyToken, async (req, res) => {
   const {newColor, tableId} = req.body;
 
   if(!tableId) {
-        return sendError(res, 
-          400, 
-          'MISSING_REQUIRED_FIELDS', 
-          'Missing required fields: table_id'
-        )
+    return sendError(res, 
+      400, 
+      'MISSING_REQUIRED_FIELDS', 
+      'Missing required fields: table_id'
+    )
   }
 
   try {
@@ -99,11 +100,13 @@ router.post('/edit/color', verifyToken, async (req, res) => {
     UPDATE space_tables
     SET color = $1
     WHERE id = $2
-    RETURNING *
     `
-    const {rows} = await pool.query(query, [newColor, tableId])
 
-    return res.status(200).json(rows[0])
+    await pool.query(query, [newColor, tableId])
+
+    const updatedTable = await findTableById(tableId)
+
+    return res.status(200).json(updatedTable)
 
   } catch (error) {
      return sendError(
@@ -119,6 +122,29 @@ router.post('/edit/position', verifyToken, async (req, res) => {
     await changeTablePosition(spaceId, tableId, tableFromIndex, tableToIndex, neighborTableId)
 
     res.send('success')
+  } catch (error) {
+    return sendError(
+      res, 500, error, 'Error querying the database',
+    )
+  }
+})
+
+
+router.post('/edit/task_format', verifyToken, async (req, res) => {
+  const {newFormat, tableId} = req.body;
+
+  if(!tableId || !newFormat) {
+    return sendError(res, 
+      400, 
+      'MISSING_REQUIRED_FIELDS', 
+      'Missing required fields: table_id or new_format'
+    )
+  }
+
+
+  try {
+    const updatedTable = await changeTableFormat(tableId, newFormat)
+    return res.status(200).json(updatedTable)
   } catch (error) {
     return sendError(
       res, 500, error, 'Error querying the database',
