@@ -126,7 +126,8 @@ const spaceResult = await pool.query(spaceQuery, [spaceId])
 `;
 
     const tablesQuery = `
-      SELECT * FROM space_tables
+      SELECT * FROM space_tables st
+      JOIN table_task_formats ttf ON ttf.table_id = st.id 
       WHERE space_id = $1
       ORDER BY table_position ASC;      
     `

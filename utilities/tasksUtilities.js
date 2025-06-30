@@ -66,7 +66,8 @@ SELECT
           'user_id', cu.id,
           'user_name', cu.username,
           'user_avatarurl', cu.avatarurl,
-          'body', tc.body
+          'body', tc.body,
+          'created_at', tc.created_at
         )
       )
       FROM task_comments tc
@@ -186,11 +187,11 @@ const setNewComment = async (taskId, userId, body) => {
 
     await client.query(commentQuery, [taskId, userId, body])
     await touchTask(taskId)
-    
+
     await client.query('COMMIT');
-    
+
     const task = await getTaskById(taskId)
-    
+
     return task
 
   } catch (error) {
@@ -200,6 +201,45 @@ const setNewComment = async (taskId, userId, body) => {
     client.release()
   }
 }
+
+const getCommentById = async (commentId) => {
+  if (!commentId) throw new Error('MISSING_ARGUMENTS')
+
+  const query = `SELECT * FROM task_comments WHERE id = $1`
+
+  try {
+    const comment = await pool.query(query, [commentId])
+    return comment.rows[0]
+  } catch (error) {
+    throw error
+  }
+}
+const deleteCommentById = async (commentId) => {
+  if (!commentId) throw new Error('MISSING_ARGUMENTS')
+
+  const query = `DELETE FROM task_comments WHERE id = $1`
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const comment = await getCommentById(commentId)
+    const taskId = comment.task_id
+
+    await pool.query(query, [commentId])
+    await touchTask(taskId)
+
+    await client.query('COMMIT');
+
+    return await getTaskById(taskId)
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error
+  } finally {
+    client.release()
+  }
+}
+
 const deleteTaskById = async (taskId) => {
   if (!taskId) throw new Error('MISSING_ARGUMENTS')
 
@@ -210,6 +250,7 @@ const deleteTaskById = async (taskId) => {
 
   try {
     await pool.query(query, [taskId])
+
   } catch (error) {
     throw error
   }
@@ -241,6 +282,7 @@ module.exports = {
   getTaskById,
   getTasksBySpaceId,
   setNewComment,
+  deleteCommentById,
   deleteTaskById,
   taskExists,
   touchTask
