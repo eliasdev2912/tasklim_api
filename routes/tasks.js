@@ -17,6 +17,7 @@ const {
   deleteTaskById,
   touchTask,
   deleteCommentById,
+  setTaskContent,
 } = require('../utilities/tasksUtilities.js');
 
 const {
@@ -146,83 +147,15 @@ router.get('/get/:task_id', verifyToken, async (req, res) => {
 })
 
 
-router.post('/edit/title', verifyToken, async (req, res) => {
-  const { taskId, newTitle } = req.body
-
+router.post('/edit/content', verifyToken, async (req, res) => {
+  const { taskId, newTitle, newDescription, newBody } = req.body
+  
   if (!taskId || !newTitle) {
     return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id or new_title')
   }
 
   try {
-    const query = `
-  UPDATE tasks
-  SET 
-   title = $2,
-   updated_at = NOW()
-  WHERE id = $1;
-  `
-
-    await pool.query(query, [taskId, newTitle])
-
-    const updatedTask = await getTaskById(taskId)
-    return res.status(200).json(updatedTask)
-
-  } catch (error) {
-    return sendError(
-      res, 500, error, 'Error querying the database',
-    )
-  }
-})
-
-
-router.post('/edit/description', verifyToken, async (req, res) => {
-  const { taskId, newDescription } = req.body
-
-  if (!taskId) {
-    return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id')
-  }
-
-
-  try {
-    const query = `
-  UPDATE tasks
-  SET 
-   description = $2,
-   updated_at = NOW()
-  WHERE id = $1;
-  `
-
-    await pool.query(query, [taskId, newDescription])
-
-    const updatedTask = await getTaskById(taskId)
-    return res.status(200).json(updatedTask)
-
-  } catch (error) {
-    return sendError(
-      res, 500, error, 'Error querying the database',
-    )
-  }
-})
-
-
-router.post('/edit/body', verifyToken, async (req, res) => {
-  const { taskId, newBody } = req.body
-
-  if (!taskId) {
-    return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id')
-  }
-
-  try {
-    const query = `
-  UPDATE tasks
-  SET 
-  body = $2,
-  updated_at = NOW()
-  WHERE id = $1;
-  `
-    await pool.query(query, [taskId, newBody])
-
-    const updatedTask = await getTaskById(taskId)
+    const updatedTask = await setTaskContent(taskId, newTitle, newDescription, newBody)
     return res.status(200).json(updatedTask)
 
   } catch (error) {
