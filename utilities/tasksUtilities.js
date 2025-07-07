@@ -2,8 +2,26 @@ const pool = require('../database.js')
 
 const { v4: uuidv4 } = require('uuid');
 
+// MAIN
+const touchTask = async (taskId) => {
+  if (!taskId) throw new Error('MISSING_ARGUMENTS')
 
+  const updateTaskQuery = `
+        UPDATE tasks
+        SET updated_at = NOW()
+        WHERE id = $1;
+        
+        `
+  try {
+    await pool.query(updateTaskQuery, [taskId])
 
+    const updatedTask = await getTaskById(taskId)
+    return updatedTask
+
+  } catch (error) {
+    throw error
+  }
+}
 const taskExists = async (taskId) => {
   if (!taskId) throw new Error('TASK_ID_IS_REQUIRED');
 
@@ -16,7 +34,6 @@ const taskExists = async (taskId) => {
   const result = await pool.query(query, [taskId]);
   return result.rows[0].exists; // ✅ esto es true o false
 };
-
 const getTaskById = async (taskId) => {
   if (!taskId) throw new Error('MISSING_ARGUMENTS')
 
@@ -171,6 +188,48 @@ ORDER BY t.updated_at DESC;
     throw error
   }
 }
+const deleteTaskById = async (taskId) => {
+  if (!taskId) throw new Error('MISSING_ARGUMENTS')
+
+
+  const query = `
+    DELETE FROM tasks WHERE id = $1
+  `
+
+  try {
+    await pool.query(query, [taskId])
+
+  } catch (error) {
+    throw error
+  }
+}
+
+// CONTENT
+const setTaskContent = async (taskId, newTitle, newDescription, newBody) => {
+  if (!taskId || !newTitle) {
+    throw new Error('MISSING_REQUIRED_FIELDS')
+  }
+
+  const query = `
+  UPDATE tasks
+  SET 
+   title = $2,
+   description = $3,
+   body = $4,
+   updated_at = NOW()
+  WHERE id = $1;
+  `
+
+  try {
+    await pool.query(query, [taskId, newTitle, newDescription, newBody])
+    const updatedTask = await getTaskById(taskId)
+    return updatedTask
+  } catch (error) {
+    throw error
+  }
+}
+
+// COMMENTS
 const setNewComment = async (taskId, userId, body) => {
   if (!taskId || !userId || !body) throw new Error('MISSING_ARGUMENTS')
 
@@ -201,7 +260,6 @@ const setNewComment = async (taskId, userId, body) => {
     client.release()
   }
 }
-
 const getCommentById = async (commentId) => {
   if (!commentId) throw new Error('MISSING_ARGUMENTS')
 
@@ -240,41 +298,9 @@ const deleteCommentById = async (commentId) => {
   }
 }
 
-const deleteTaskById = async (taskId) => {
-  if (!taskId) throw new Error('MISSING_ARGUMENTS')
 
 
-  const query = `
-    DELETE FROM tasks WHERE id = $1
-  `
 
-  try {
-    await pool.query(query, [taskId])
-
-  } catch (error) {
-    throw error
-  }
-}
-
-const touchTask = async (taskId) => {
-  if (!taskId) throw new Error('MISSING_ARGUMENTS')
-
-  const updateTaskQuery = `
-        UPDATE tasks
-        SET updated_at = NOW()
-        WHERE id = $1;
-        
-        `
-  try {
-    await pool.query(updateTaskQuery, [taskId])
-
-    const updatedTask = await getTaskById(taskId)
-    return updatedTask
-
-  } catch (error) {
-    throw error
-  }
-}
 
 
 
@@ -285,5 +311,6 @@ module.exports = {
   deleteCommentById,
   deleteTaskById,
   taskExists,
-  touchTask
+  touchTask,
+  setTaskContent
 }; 
