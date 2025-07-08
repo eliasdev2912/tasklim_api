@@ -1,6 +1,5 @@
 const pool = require('../database.js')
 const { v4: uuidv4 } = require('uuid');
-const { getTaskById } = require('./tasksUtilities.js');
 
 
 

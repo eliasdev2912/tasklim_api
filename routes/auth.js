@@ -9,7 +9,7 @@ require('dotenv').config();
 
 
 // Middlewares
-const verifyToken = require('../middlewares/authMiddleware.js');
+const verifyToken = require('../middlewares/authMiddlewares.js');
 
 // Functions
 
@@ -134,7 +134,6 @@ router.post('/signin', async (req, res) => {
 
     }
 });
-
 
 router.post('/login', async (req, res) => {
     try {

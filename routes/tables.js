@@ -9,8 +9,8 @@ require('dotenv').config();
 var jwt = require('jsonwebtoken');
 
 // Middlewares
-const verifyToken = require('../middlewares/authMiddleware.js');
-
+const verifyToken = require('../middlewares/authMiddlewares.js');
+const ensureSpaceMember = require('../middlewares/spaceMiddlewares.js')
 
 // Functions
 const { findTableByName, createNewTable, changeTablePosition, findTableById, changeTableFormat } = require('../utilities/tablesUtilities.js')
@@ -19,8 +19,9 @@ const { sendError } = require('../utilities/errorsUtilities.js')
 
 
 
-router.post('/create', verifyToken, async (req, res) => {
-  const { newTableName, spaceId } = req.body
+router.post('/create/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
+  const { newTableName } = req.body
+  const spaceId = req.params.space_id
 
   if (!newTableName || !spaceId) {
     return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: new_table_name or space_id')
@@ -48,8 +49,10 @@ router.post('/create', verifyToken, async (req, res) => {
 })
 
 
-router.post('/edit/name', verifyToken, async (req, res) => {
-  const { tableId, newTableName, spaceId } = req.body;
+router.post('/edit/name/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
+  const { tableId, newTableName } = req.body;
+  const spaceId = req.params.space_id
+
 
     if (!newTableName || !spaceId || !tableId) {
     return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: new_table_name, table_id or space_id')
@@ -84,7 +87,8 @@ router.post('/edit/name', verifyToken, async (req, res) => {
   }
 });
 
-router.post('/edit/color', verifyToken, async (req, res) => {
+
+router.post('/edit/color/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
   const {newColor, tableId} = req.body;
 
   if(!tableId) {
@@ -115,8 +119,10 @@ router.post('/edit/color', verifyToken, async (req, res) => {
   }
 })
 
-router.post('/edit/position', verifyToken, async (req, res) => {
-  const {spaceId, tableId, tableFromIndex, tableToIndex, neighborTableId} = req.body
+
+router.post('/edit/position/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
+  const {tableId, tableFromIndex, tableToIndex, neighborTableId} = req.body
+  const spaceId = req.params.space_id
 
   try {
     await changeTablePosition(spaceId, tableId, tableFromIndex, tableToIndex, neighborTableId)
@@ -130,7 +136,7 @@ router.post('/edit/position', verifyToken, async (req, res) => {
 })
 
 
-router.post('/edit/task_format', verifyToken, async (req, res) => {
+router.post('/edit/task_format/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
   const {newFormat, tableId} = req.body;
 
   if(!tableId || !newFormat) {
