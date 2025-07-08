@@ -9,7 +9,8 @@ require('dotenv').config();
 var jwt = require('jsonwebtoken');
 
 // Middlewares
-const verifyToken = require('../middlewares/authMiddleware.js');
+const verifyToken = require('../middlewares/authMiddlewares.js');
+const ensureSpaceMember = require('../middlewares/spaceMiddlewares.js')
 
 const {
   getTaskById,
@@ -30,10 +31,12 @@ const { sendError } = require('../utilities/errorsUtilities.js')
 
 
 
-router.post('/create', verifyToken, async (req, res) => {
+router.post('/create/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
   const userId = req.user.id;
+  const { taskTitle, tableId } = req.body;
+  const spaceId = req.params.space_id
 
-  const { taskTitle, spaceId, tableId } = req.body;
+
 
   if (!taskTitle || !spaceId || !tableId) {
     return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_title, space_id or table_id')
@@ -67,7 +70,7 @@ router.post('/create', verifyToken, async (req, res) => {
 })
 
 
-router.delete('/delete/:id', verifyToken, async (req, res) => {
+router.delete('/delete/:id/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
   const taskId = req.params.id;
 
   if (!taskId) {
@@ -87,7 +90,7 @@ router.delete('/delete/:id', verifyToken, async (req, res) => {
 })
 
 
-router.post('/create/comment', verifyToken, async (req, res) => {
+router.post('/create/comment/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
   const { taskId, body } = req.body;
   const userId = req.user.id;
 
@@ -105,7 +108,7 @@ router.post('/create/comment', verifyToken, async (req, res) => {
   }
 })
 
-router.post('/delete/comment/:comment_id', verifyToken, async (req, res) => {
+router.post('/delete/comment/:comment_id/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
   const commentId = req.params.comment_id;
 
    if (!commentId) {
@@ -125,7 +128,7 @@ router.post('/delete/comment/:comment_id', verifyToken, async (req, res) => {
 })
 
 
-router.get('/get/:task_id', verifyToken, async (req, res) => {
+router.get('/get/:task_id/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
   const taskId = req.params.task_id
 
   if (!taskId) {
@@ -147,7 +150,7 @@ router.get('/get/:task_id', verifyToken, async (req, res) => {
 })
 
 
-router.post('/edit/content', verifyToken, async (req, res) => {
+router.post('/edit/content/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
   const { taskId, newTitle, newDescription, newBody } = req.body
   
   if (!taskId || !newTitle) {
@@ -166,7 +169,7 @@ router.post('/edit/content', verifyToken, async (req, res) => {
 })
 
 
-router.post('/edit/table', verifyToken, async (req, res) => {
+router.post('/edit/table/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
   const { taskId, newTableId } = req.body
 
   if (!taskId || !newTableId) {
@@ -193,8 +196,10 @@ WHERE id = $1;
 })
 
 
-router.post('/find_or_create/tag', verifyToken, async (req, res) => {
-  const { taskId, tagName, tagColor, spaceId } = req.body;
+router.post('/find_or_create/tag/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
+  const { taskId, tagName, tagColor } = req.body;
+  const spaceId = req.params.space_id
+
 
   if (!taskId || !tagName || !tagColor || !spaceId) {
     if (!taskId) {
@@ -223,7 +228,7 @@ router.post('/find_or_create/tag', verifyToken, async (req, res) => {
   }
 })
 
-router.post('/delete/tag', verifyToken, async (req, res) => {
+router.post('/delete/tag/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
   const { taskId, tagId } = req.body;
 
   if (!taskId || !tagId) {

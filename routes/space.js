@@ -8,8 +8,8 @@ require('dotenv').config();
 var jwt = require('jsonwebtoken');
 
 // Middlewares
-const verifyToken = require('../middlewares/authMiddleware.js');
-
+const verifyToken = require('../middlewares/authMiddlewares.js');
+const ensureSpaceMember = require('../middlewares/spaceMiddlewares.js')
 
 // Functions
 const {
@@ -96,8 +96,8 @@ router.post('/create', verifyToken, async (req, res) => {
 });
 
 
-router.get('/get/:id', verifyToken, async (req, res) => {
-  const spaceId = parseInt(req.params.id, 10);  // o donde venga spaceId
+router.get('/get/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
+  const spaceId = parseInt(req.params.space_id, 10);  // o donde venga spaceId
 
   if(!spaceId) {
     return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: space_id')
@@ -153,8 +153,8 @@ const spaceResult = await pool.query(spaceQuery, [spaceId])
   }
 })
 
-router.post('/create/invitation_code', verifyToken, async (req, res) => {
-  const { spaceId } = req.body;
+router.post('/create/invitation_code/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
+  const spaceId = req.params.space_id;
   const expiresIn = '1h'; // o por minutos, horas, etc.
 
   if(!spaceId) {
@@ -207,7 +207,7 @@ router.get('/verify/invitation/:token', verifyToken, async (req, res) => {
 });
 
 
-router.delete('/leave/:space_id', verifyToken, async (req, res) => {
+router.delete('/leave/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
   const userId = req.user.id;
   const spaceId = req.params.space_id;
 

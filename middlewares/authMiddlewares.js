@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
+const { sendError } = require('../utilities/errorsUtilities');
 
 function verifyToken(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
 
   if (!token) {
-    return res.status(401).json({ error: 'Token requerido' });
+    return sendError(res, 401, 'MISSING_TOKEN', 'Token is required')
   }
 
   try {
