@@ -17,6 +17,7 @@ async function ensureSpaceMember(req, res, next) {
       return sendError(res, 403, 'ACCESS_DENIED', 'You are not a member of this space')
     }
 
+    req.spaceId = spaceId
     next();
   } catch (error) {
     console.error('Error en ensureSpaceMember', error);
