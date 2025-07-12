@@ -27,6 +27,7 @@ const {
 
 const { sendError } = require('../utilities/errorsUtilities.js');
 const { getSpaceTags } = require('../utilities/tagsUtilities.js');
+const { getSpaceTeams } = require('../utilities/teamsUtilities.js');
 
 
 
@@ -134,6 +135,7 @@ const spaceResult = await pool.query(spaceQuery, [spaceId])
 
     const tasks = await getTasksBySpaceId(spaceId)
     const tags = await getSpaceTags(spaceId)
+    const teams = await getSpaceTeams(spaceId)
 
     const membersResult = await pool.query(membersQuery, [spaceId])
     const tablesResult = await pool.query(tablesQuery, [spaceId])
@@ -143,7 +145,8 @@ const spaceResult = await pool.query(spaceQuery, [spaceId])
       members: membersResult.rows,
       tables: tablesResult.rows,
       tasks: tasks,
-      tags: tags
+      tags: tags,
+      teams: teams
     })
 
   } catch (error) {
