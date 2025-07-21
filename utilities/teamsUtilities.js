@@ -15,8 +15,8 @@ const checkTeamExistsByName = async (teamName) => {
 };
 
 
-const createNewTeam = async (spaceId, teamName, teamDescription, teamColor, teamMembers) => {
-  if (!teamName || !teamDescription || !teamColor || !Array.isArray(teamMembers) || teamMembers.length === 0) {
+const createNewTeam = async (spaceId, teamName, teamDescription, teamColor, teamBannerUrl, teamMembers) => {
+  if (!teamName || !teamDescription || !teamColor || !teamBannerUrl || !Array.isArray(teamMembers) || teamMembers.length === 0) {
     throw new Error('MISSING_ARGUMENTS');
   }
   if(await checkTeamExistsByName(teamName)) {
@@ -26,8 +26,8 @@ const createNewTeam = async (spaceId, teamName, teamDescription, teamColor, team
   const client = await pool.connect();
 
   const newTeamQuery = `
-    INSERT INTO teams (space_id, name, description, color)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO teams (space_id, name, description, color, banner_url)
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING id;
   `;
 
@@ -40,7 +40,7 @@ const createNewTeam = async (spaceId, teamName, teamDescription, teamColor, team
     await client.query('BEGIN');
 
     const uppercaseTeamName = teamName.toUpperCase()
-    const result = await client.query(newTeamQuery, [spaceId, uppercaseTeamName, teamDescription, teamColor]);
+    const result = await client.query(newTeamQuery, [spaceId, uppercaseTeamName, teamDescription, teamColor, teamBannerUrl]);
     const newTeamId = result.rows[0].id;
 
     for (const userId of teamMembers) {
