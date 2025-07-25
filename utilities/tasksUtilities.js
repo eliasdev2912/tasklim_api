@@ -34,160 +34,239 @@ const taskExists = async (taskId) => {
   const result = await pool.query(query, [taskId]);
   return result.rows[0].exists; // ✅ esto es true o false
 };
+
+
 const getTaskById = async (taskId) => {
   if (!taskId) throw new Error('MISSING_ARGUMENTS')
 
-  const taskQuery = `
-SELECT 
-  t.id,
-  t.space_id,
-  t.title,
-  t.description,
-  t.body,
-  t.created_at,
-  t.updated_at,
-  t.table_id,
+  const client = await pool.connect()
 
-  -- Tags: subquery aislada para evitar cross join con comments
- COALESCE(
-  (
-    SELECT json_agg(
-      json_build_object(
-        'id', tg.id,
-        'color', tg.color,
-        'name', tg.name
-      )
-    )
-    FROM task_tags tt
-    JOIN tags tg ON tg.id = tt.tag_id
-    WHERE tt.task_id = t.id
-  ),
-  '[]'
-) AS tags,
+  const taskContentQuery = `
+    SELECT title, description, body FROM tasks WHERE id = $1;
+  `
+const taskMetadataQuery = `
+  SELECT 
+    t.id,
+    t.created_at,
+    t.updated_at,
 
-  -- Creador
-  json_build_object(
-    'id', u.id,
-    'username', u.username,
-    'role', mi.user_rol,
-    'avatarurl', u.avatarurl
-  ) AS created_by,
-
-  -- Comments: subquery aislada para evitar cross join con tags
-  COALESCE(
     (
+      SELECT json_build_object(
+        'id', u.id,
+        'username', u.username,
+        'avatarurl', u.avatarurl,
+        'role', mi.user_rol
+      )
+      FROM users u
+      LEFT JOIN members_instances mi ON mi.user_id = u.id AND mi.space_id = t.space_id
+      WHERE u.id = t.created_by
+    ) AS created_by
+
+  FROM tasks t
+  WHERE t.id = $1
+`;
+
+const taskRelationsQuery = `
+  SELECT 
+    t.table_id,
+
+    -- TAGS
+    COALESCE((
+      SELECT json_agg(
+        json_build_object(
+          'id', tg.id,
+          'color', tg.color,
+          'name', tg.name
+        )
+      )
+      FROM task_tags tt
+      JOIN tags tg ON tg.id = tt.tag_id
+      WHERE tt.task_id = t.id
+    ), '[]'::json) AS tags,
+
+    -- COMMENTS
+    COALESCE((
       SELECT json_agg(
         json_build_object(
           'id', tc.id,
-          'task_id', tc.task_id,
-          'user_id', cu.id,
-          'user_name', cu.username,
-          'user_avatarurl', cu.avatarurl,
+          'created_by', json_build_object(
+            'id', u.id,
+            'username', u.username,
+            'avatarurl', u.avatarurl
+          ),
           'body', tc.body,
           'created_at', tc.created_at
         )
       )
       FROM task_comments tc
-      JOIN users cu ON tc.user_id = cu.id
+      LEFT JOIN users u ON u.id = tc.user_id 
       WHERE tc.task_id = t.id
-    ),
-    '[]'
-  ) AS comments
+    ), '[]'::json) AS comments,
 
-FROM tasks t
-JOIN users u ON t.created_by = u.id
-LEFT JOIN members_instances mi ON mi.user_id = u.id AND mi.space_id = t.space_id
-
-WHERE t.id = $1;
-
-        `
-
-  try {
-    const { rows } = await pool.query(taskQuery, [taskId]);
-    return rows[0]; // Una sola tarea
-  } catch (error) {
-    throw error
-  }
-}
-const getTasksBySpaceId = async (spaceId) => {
-  if (!spaceId) throw new Error('MISSING_ARGUMENTS')
-
-
-  const tasksQuery = `
-SELECT 
-  t.id,
-  t.space_id,
-  t.title,
-  t.description,
-  t.body,
-  t.created_at,
-  t.updated_at,
-  t.table_id,
-
--- Tags: solo los asociados a esta tarea
-COALESCE(
-  (
-    SELECT json_agg(
-      json_build_object(
-        'id', tg.id,
-        'color', tg.color,
-        'name', tg.name
-      )
-    )
-    FROM task_tags tt
-    JOIN tags tg ON tg.id = tt.tag_id
-    WHERE tt.task_id = t.id
-  ),
-  '[]'
-) AS tags,
-
-
-
-  -- Creador de la tarea
-  json_build_object(
-    'id', u.id,
-    'username', u.username,
-    'role', mi.user_rol,
-    'avatarurl', u.avatarurl
-  ) AS created_by,
-
-  -- Comments: subquery aislada
-  COALESCE(
-    (
+      -- ASSIGNEES
+    COALESCE((
       SELECT json_agg(
         json_build_object(
-          'id', tc.id,
-          'task_id', tc.task_id,
-          'user_id', cu.id,
-          'user_name', cu.username,
-          'user_avatarurl', cu.avatarurl,
-          'body', tc.body
+          'id', tea.id,
+          'name', tea.name,
+          'color', tea.color,
+          'description', tea.description,
+          'banner_url', tea.banner_url
         )
       )
-      FROM task_comments tc
-      JOIN users cu ON tc.user_id = cu.id
-      WHERE tc.task_id = t.id
-    ),
-    '[]'
-  ) AS comments
+      FROM task_team_assignments tta
+      LEFT JOIN teams tea ON tta.team_id = tea.id 
+      WHERE tta.task_id = t.id
+    ), '[]'::json) AS assignees
 
-FROM tasks t
-JOIN users u ON t.created_by = u.id
-LEFT JOIN members_instances mi ON mi.user_id = u.id AND mi.space_id = t.space_id
-
-WHERE t.space_id = $1::integer
-
-ORDER BY t.updated_at DESC;
-
+  FROM tasks t
+  WHERE t.id = $1
 `
 
   try {
-    const { rows } = await pool.query(tasksQuery, [spaceId]);
-    return rows; // Lista de tareas
+
+    await client.query('BEGIN')
+
+    const content = (await client.query(taskContentQuery, [taskId])).rows[0];
+    const metadata = (await client.query(taskMetadataQuery, [taskId])).rows[0];
+    const relations = (await client.query(taskRelationsQuery, [taskId])).rows[0];
+    
+    await client.query('COMMIT')
+
+    return {content, metadata, relations};
   } catch (error) {
+    await client.query('ROLLBACK')
+    console.log(error)
     throw error
+  } finally {
+    client.release()
   }
 }
+const getTasksBySpaceId = async (spaceId) => {
+  if (!spaceId) throw new Error('MISSING_ARGUMENTS');
+
+  const client = await pool.connect();
+
+  // Queries base, se parametrizan con cada task.id individualmente
+  const taskContentQuery = `
+    SELECT title, description, body FROM tasks t WHERE id = $1;
+  `;
+
+  const taskMetadataQuery = `
+    SELECT 
+      t.id,
+      t.created_at,
+      t.updated_at,
+
+      (
+        SELECT json_build_object(
+          'id', u.id,
+          'username', u.username,
+          'avatarurl', u.avatarurl,
+          'role', mi.user_rol
+        )
+        FROM users u
+        LEFT JOIN members_instances mi 
+          ON mi.user_id = u.id AND mi.space_id = t.space_id
+        WHERE u.id = t.created_by
+      ) AS created_by
+
+    FROM tasks t
+    WHERE t.id = $1;
+  `;
+
+ const taskRelationsQuery = `
+  SELECT 
+    t.table_id,
+
+    -- TAGS
+    COALESCE((
+      SELECT json_agg(
+        json_build_object(
+          'id', tg.id,
+          'color', tg.color,
+          'name', tg.name
+        )
+      )
+      FROM task_tags tt
+      JOIN tags tg ON tg.id = tt.tag_id
+      WHERE tt.task_id = t.id
+    ), '[]'::json) AS tags,
+
+    -- COMMENTS
+    COALESCE((
+      SELECT json_agg(
+        json_build_object(
+          'id', tc.id,
+          'created_by', json_build_object(
+            'id', u.id,
+            'username', u.username,
+            'avatarurl', u.avatarurl
+          ),
+          'body', tc.body,
+          'created_at', tc.created_at
+        )
+      )
+      FROM task_comments tc
+      LEFT JOIN users u ON u.id = tc.user_id 
+      WHERE tc.task_id = t.id
+    ), '[]'::json) AS comments,
+
+    -- ASSIGNEES
+    COALESCE((
+      SELECT json_agg(
+        json_build_object(
+          'id', tea.id,
+          'name', tea.name,
+          'color', tea.color,
+          'description', tea.description,
+          'banner_url', tea.banner_url
+        )
+      )
+      FROM task_team_assignments tta
+      LEFT JOIN teams tea ON tta.team_id = tea.id 
+      WHERE tta.task_id = t.id
+    ), '[]'::json) AS assignees
+
+  FROM tasks t
+  WHERE t.id = $1
+`
+
+
+  try {
+    await client.query('BEGIN');
+
+    // Obtener todas las tareas del espacio
+    const tasks = (await client.query(`
+      SELECT id FROM tasks WHERE space_id = $1 ORDER BY updated_at DESC;
+    `, [spaceId])).rows;
+
+    // Ejecutar consultas paralelas para cada tarea
+    const results = await Promise.all(tasks.map(async ({ id }) => {
+      const [contentRes, metadataRes, relationsRes] = await Promise.all([
+        client.query(taskContentQuery, [id]),
+        client.query(taskMetadataQuery, [id]),
+        client.query(taskRelationsQuery, [id]),
+      ]);
+
+      return {
+        content: contentRes.rows[0],
+        metadata: metadataRes.rows[0],
+        relations: relationsRes.rows[0],
+      };
+    }));
+
+    await client.query('COMMIT');
+    return results;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error(error);
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 const deleteTaskById = async (taskId) => {
   if (!taskId) throw new Error('MISSING_ARGUMENTS')
 
@@ -299,6 +378,33 @@ const deleteCommentById = async (commentId) => {
 }
 
 
+// ASSIGNEES
+
+const addAssignee = async (taskId, teamId) => {
+  if(!taskId || !teamId) throw new Error('MISSING_ARGUMENTS')
+
+  const query = `
+  INSERT INTO task_team_assignments (task_id, team_id)
+  VALUES ($1, $2);
+  `
+  try {
+    await pool.query(query, [taskId, teamId])
+  } catch (error) {
+    throw error
+  }
+}
+const deleteAssignee = async (taskId, teamId) => {
+  if(!taskId || !teamId) throw new Error('MISSING_ARGUMENTS')
+
+  const query = `
+  DELETE FROM task_team_assignments WHERE task_id = $1 AND team_id = $2
+  `
+  try {
+    await pool.query(query, [taskId, teamId])
+  } catch (error) {
+    throw error
+  }
+}
 
 
 
@@ -312,5 +418,7 @@ module.exports = {
   deleteTaskById,
   taskExists,
   touchTask,
-  setTaskContent
+  setTaskContent,
+  addAssignee,
+  deleteAssignee
 }; 

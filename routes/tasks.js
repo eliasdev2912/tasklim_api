@@ -19,6 +19,8 @@ const {
   touchTask,
   deleteCommentById,
   setTaskContent,
+  addAssignee,
+  deleteAssignee,
 } = require('../utilities/tasksUtilities.js');
 
 const {
@@ -128,13 +130,15 @@ router.post('/delete/comment/:comment_id/:space_id', verifyToken, ensureSpaceMem
 })
 
 
-router.get('/get/:task_id/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
+router.get('/get/:task_id/:space_id', /* verifyToken, ensureSpaceMember, */ async (req, res) => {
+  console.log(1)
   const taskId = req.params.task_id
 
   if (!taskId) {
     return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id')
   }
 
+  console.log(2)
 
   try {
 
@@ -240,6 +244,41 @@ router.post('/delete/tag/:space_id', verifyToken, ensureSpaceMember, async (req,
 
     res.status(200).json(result);
 
+  } catch (error) {
+    return sendError(
+      res, 500, error, 'Error querying the database',
+    )
+  }
+})
+
+router.post('/create/assignee/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
+  const {taskId, teamId} = req.body
+
+  if(!taskId || !teamId) {
+        return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id or team_id')
+  }
+
+  try {
+    await addAssignee(taskId, teamId)
+    const updatedTask = await touchTask(taskId)
+    return res.status(200).json(updatedTask)
+  } catch (error) {
+    return sendError(
+      res, 500, error, 'Error querying the database',
+    )
+  }
+})
+router.post('/delete/assignee/:space_id', verifyToken, ensureSpaceMember, async (req, res) => {
+  const {taskId, teamId} = req.body
+
+  if(!taskId || !teamId) {
+        return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id or team_id')
+  }
+
+  try {
+    await deleteAssignee(taskId, teamId)
+    const updatedTask = await touchTask(taskId)
+    return res.status(200).json(updatedTask)
   } catch (error) {
     return sendError(
       res, 500, error, 'Error querying the database',
