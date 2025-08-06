@@ -1,27 +1,28 @@
-const pool = require('../database.js');
-const { sendError } = require('../utilities/errorsUtilities.js');
-const { isMember } = require('../utilities/spaceUtilities.js');
+const isMember = require('../modules/spaces/validations/isMember.js');
+const spaceExistsById = require('../modules/spaces/validations/spaceExistsById.js');
+const userExistsById = require('../modules/users/validations/userExistsById.js');
+const { ForbiddenError } = require('../utilities/errorsUtilities.js');
+
 
 async function ensureSpaceMember(req, res, next) {
   const userId = req.user.id;  // viene del verifyToken
   const spaceId = req.params.space_id;
-
-  if(!userId || !spaceId) {
-    return sendError(res, 401, 'MISSING_ARGUMENTS', 'Missing required fields: space_id or user_id')
-  }
-
   try {
-    const memberCheck  = await isMember(spaceId, userId)
+    await Promise.all([
+      userExistsById.error(userId),
+      spaceExistsById.error(spaceId)
+    ])
+    
+    const memberCheck = await isMember(spaceId, userId)
 
     if (!memberCheck) {
-      return sendError(res, 403, 'ACCESS_DENIED', 'You are not a member of this space')
+      throw new ForbiddenError('You are not a member of this space')
     }
 
     req.spaceId = spaceId
     next();
   } catch (error) {
-    console.error('Error en ensureSpaceMember', error);
-    res.status(500).json({ error: 'Error interno' });
+    next(error)
   }
 }
 
