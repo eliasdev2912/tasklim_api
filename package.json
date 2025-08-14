@@ -20,7 +20,8 @@
     "multer": "^2.0.1",
     "multer-s3": "^2.10.0",
     "pg": "^8.16.0",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "validator": "^13.15.15"
   },
   "devDependencies": {
     "jest": "^30.0.5",

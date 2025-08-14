@@ -3,6 +3,7 @@ const express = require('express');
 const app = express();
 const port = 3000;
 const cors = require('cors')
+const os = require('os')
 
 const errorHandler = require('./middlewares/errorHandler')
 
@@ -46,5 +47,22 @@ app.use(errorHandler)
 // })
 
 app.listen(port, () => {
-    console.log(`Server on port ${port}`);
+    const now = new Date().toISOString();
+    const host = process.env.HOST || 'localhost';
+    const env = process.env.NODE_ENV || 'development';
+    const pid = process.pid;
+    const version = process.env.npm_package_version || 'unknown';
+
+    const url = `http://${host}:${port}`;
+
+    console.log('═'.repeat(30));
+    console.log(`🚀 Server started`);
+    console.log(`- Port: ${port}`);
+    console.log(`- Host: ${host}`);
+    console.log(`- URL: ${url}`);
+    console.log(`- PID: ${pid}`);
+    console.log(`- Environment: ${env}`);
+    console.log(`- Version: ${version}`);
+    console.log(`- Started at: ${now}`);
+    console.log('═'.repeat(30));
 });

@@ -11,15 +11,13 @@ const getSpaceTeams = require('../../teams/queries/getSpaceTeams');
 
 
 const getSpace = async (spaceId) => {
-    const parsedSpaceId = parseInt(spaceId, 10);
-
   try {
     const spaceQuery = `
   SELECT *
   FROM spaces
   WHERE id = $1;
         `;
-    const spaceResult = await pool.query(spaceQuery, [parsedSpaceId])
+    const spaceResult = await pool.query(spaceQuery, [spaceId])
 
     if (!spaceResult.rows[0] || spaceResult.rowCount == 0) {
       throw new NotFoundError('Space not found')
@@ -41,12 +39,12 @@ const getSpace = async (spaceId) => {
       WHERE space_id = $1
       ORDER BY table_position ASC;      
     `
-    const tasks = await getTasksBySpaceId(parsedSpaceId)
-    const tags = await getSpaceTags(parsedSpaceId)
-    const teams = await getSpaceTeams(parsedSpaceId)
+    const tasks = await getTasksBySpaceId(spaceId)
+    const tags = await getSpaceTags(spaceId)
+    const teams = await getSpaceTeams(spaceId)
 
-    const membersResult = await pool.query(membersQuery, [parsedSpaceId])
-    const tablesResult = await pool.query(tablesQuery, [parsedSpaceId])
+    const membersResult = await pool.query(membersQuery, [spaceId])
+    const tablesResult = await pool.query(tablesQuery, [spaceId])
 
     return {
       space: spaceResult.rows[0],

@@ -48,7 +48,7 @@ router.get('/get/:space_id', verifyToken, ensureSpaceMember, async (req, res, ne
 
   try {
     if(!spaceId) throw new BadRequestError('Missing arguments: space_id')
-
+      
     const space = await getSpace(spaceId)
 
     return res.json(space)
