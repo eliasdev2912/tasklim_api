@@ -18,6 +18,7 @@ const userExistsById = require('../users/validations/userExistsById.js');
 const verifyToken = require('../../middlewares/authMiddlewares.js');
 const ensureSpaceMember = require('../../middlewares/spaceMiddlewares.js');
 const teamExistsById = require('../teams/validations/teamExistsById.js');
+const deleteAssignee = require('./actions/deleteAssignee.js');
 
 
 

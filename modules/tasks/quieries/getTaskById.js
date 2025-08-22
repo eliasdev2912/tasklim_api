@@ -11,7 +11,7 @@ const getTaskById = async (taskId) => {
   const client = await pool.connect()
 
   const taskContentQuery = `
-    SELECT title, description, body FROM tasks WHERE id = $1;
+    SELECT title, description, body, due_date FROM tasks WHERE id = $1;
   `
 const taskMetadataQuery = `
   SELECT 

@@ -14,7 +14,7 @@ const getTasksBySpaceId = async (spaceId) => {
 
   // Queries base, se parametrizan con cada task.id individualmente
   const taskContentQuery = `
-    SELECT title, description, body FROM tasks t WHERE id = $1;
+    SELECT title, description, body, due_date FROM tasks t WHERE id = $1;
   `;
   const taskMetadataQuery = `
     SELECT 

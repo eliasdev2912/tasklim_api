@@ -1,5 +1,5 @@
 const pool = require('../../../database');
-const { teamExistsById } = require('../../../utilities/teamsUtilities');
+const teamExistsById = require('../../teams/validations/teamExistsById');
 const taskExistsById = require('../validations/taskExistsById');
 
 

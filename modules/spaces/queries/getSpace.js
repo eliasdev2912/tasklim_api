@@ -34,8 +34,7 @@ const getSpace = async (spaceId) => {
   WHERE m.space_id = $1;
 `;
     const tablesQuery = `
-      SELECT * FROM space_tables st
-      JOIN table_task_formats ttf ON ttf.table_id = st.id 
+      SELECT * FROM space_tables
       WHERE space_id = $1
       ORDER BY table_position ASC;      
     `

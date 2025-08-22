@@ -4,8 +4,7 @@ const pool = require('../../../database')
 const findTableById = async (tableId) => {
   try {
     const query = `
-        SELECT * FROM space_tables st
-        JOIN table_task_formats ttf ON ttf.table_id = $1
+        SELECT * FROM space_tables
         WHERE id = $1
       `
     const result = await pool.query(query, [tableId])

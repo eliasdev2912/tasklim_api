@@ -19,82 +19,10 @@ const changeTableFormat = async (tableId, newFormat) => {
       WHERE id = $2
   `
 
-  const getTaskParts = () => {
-    switch (newFormat) {
-      case 'minimalist':
-        return {
-          show_title: true,
-          show_description: false,
-          show_tags: false,
-          show_assignees: false,
-          show_body: false,
-          show_author: false,
-          show_deadline: false,
-          show_comments: false
-        };
-      case 'compact':
-        return {
-          show_title: false,
-          show_description: true,
-          show_tags: true,
-          show_assignees: true,
-          show_body: false,
-          show_author: false,
-          show_deadline: true,
-          show_comments: false
-        };
-      case 'standard':
-        return {
-          show_title: true,
-          show_description: true,
-          show_tags: true,
-          show_assignees: true,
-          show_body: false,
-          show_author: false,
-          show_deadline: true,
-          show_comments: true
-        };
-      case 'full':
-        return {
-          show_title: true,
-          show_description: true,
-          show_tags: true,
-          show_assignees: true,
-          show_body: true,
-          show_author: true,
-          show_deadline: true,
-          show_comments: true
-        };
-      default:
-        return {
-          show_title: true,
-          show_description: true,
-          show_tags: true,
-          show_assignees: true,
-          show_body: false,
-          show_author: false,
-          show_deadline: true,
-          show_comments: true
-        };
-    }
-  }
-  const parts = getTaskParts();
-  const keys = Object.keys(parts);
-  const values = Object.values(parts);
-
-  const setClause = keys.map((key, idx) => `${key} = $${idx + 1}`).join(', ');
-
-  const tableTaskFormatsQuery = `
-  UPDATE table_task_formats
-SET ${setClause}
-WHERE table_id = $${keys.length + 1}
- `
-
   try {
     await client.query('BEGIN')
 
     await client.query(tableQuery, [newFormat, tableId])
-    await client.query(tableTaskFormatsQuery, [...values, tableId]);
 
     await client.query('COMMIT')
 
