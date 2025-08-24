@@ -16,8 +16,8 @@ const tagsRoute = require('./modules/tags/tagRoutes')
 const commentsRoute = require('./modules/comments/commentRoutes')
 
 // Import Events
-const taskCreatedSetUnreads = require('./modules/tasks/listeners/taskCreatedSetUnreads');
-
+const onTaskCreatedSetUnreads = require('./modules/tasks/listeners/onTaskCreatedSetUnreads');
+const onTaskUpdatedSetUnreads = require('./modules/tasks/listeners/onTaskUpdatedSetUnreads')
 
 
 // Middlewares
@@ -39,7 +39,10 @@ app.use('/api/teams', teamsRoute)
 app.use('/api/auth', authRoute);
 
 // Run Events
-taskCreatedSetUnreads();
+onTaskCreatedSetUnreads();
+onTaskUpdatedSetUnreads();
+
+
 
 // Error middleware
 app.use(errorHandler)

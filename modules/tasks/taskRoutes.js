@@ -79,11 +79,14 @@ router.get('/get/:task_id/:space_id', verifyToken, ensureSpaceMember, async (req
 
 router.post('/edit/content/:space_id', verifyToken, ensureSpaceMember, async (req, res, next) => {
   const { taskId, newTitle, newDescription, newBody } = req.body
+  const spaceId = req.params.space_id
+  const clientId = req.user.id
+
   try {
     await taskExistsById.error(taskId)
     if(!newTitle) throw new BadRequestError('Missing arguments: new_title')
 
-    const updatedTask = await setTaskContent(taskId, newTitle, newDescription, newBody)
+    const updatedTask = await setTaskContent(spaceId, taskId, newTitle, newDescription, newBody, clientId)
     return res.status(200).json(updatedTask)
 
   } catch (error) {

@@ -1,5 +1,6 @@
 const pool = require('../../../database');
 const { BadRequestError } = require('../../../utilities/errorsUtilities');
+const eventBus = require('../../event_bus/eventBus');
 const getTaskById = require('../quieries/getTaskById');
 const taskExistsById = require('../validations/taskExistsById');
 
@@ -9,7 +10,7 @@ const taskExistsById = require('../validations/taskExistsById');
 
 
 
-const setTaskContent = async (taskId, newTitle, newDescription, newBody) => {
+const setTaskContent = async (spaceId, taskId, newTitle, newDescription, newBody, updateAuthorId) => {
     // Validar argumento taskId y existencia
   await taskExistsById.error(taskId)
   
@@ -30,6 +31,7 @@ const setTaskContent = async (taskId, newTitle, newDescription, newBody) => {
   try {
     await pool.query(query, [taskId, newTitle, newDescription, newBody])
     const updatedTask = await getTaskById(taskId)
+    eventBus.emit('taskUpdated', {task: updatedTask, updateAuthorId, spaceId})
     return updatedTask
   } catch (error) {
     throw error

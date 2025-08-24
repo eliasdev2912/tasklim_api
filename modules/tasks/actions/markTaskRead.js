@@ -13,7 +13,6 @@ const markTaskRead = async (taskId, userId) => {
         
         const res = await pool.query(query, [taskId, userId])
 
-        console.log(`tarea (${taskId}) marcada como leída para: ${userId}`)
         return res.rows[0]
     } catch (error) {
         throw error

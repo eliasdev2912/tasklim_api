@@ -7,7 +7,7 @@ const getTaskById = require('./getTaskById');
 
 const getUnreadTasks = async (spaceId, userId) => {
  const query = `
-  SELECT tu.task_id
+  SELECT tu.*
   FROM task_unreads tu
   JOIN tasks t ON t.id = tu.task_id
   WHERE tu.user_id = $1
@@ -15,12 +15,9 @@ const getUnreadTasks = async (spaceId, userId) => {
 `;
 
 try {
-  const result = await pool.query(query, [userId, spaceId]);
+  const result = (await pool.query(query, [userId, spaceId])).rows;
 
-  // mapear para obtener solo los IDs
-  const taskIds = result.rows.map(row => row.task_id);
-
-  return taskIds;
+  return result;
 
 } catch (err) {
   throw err;

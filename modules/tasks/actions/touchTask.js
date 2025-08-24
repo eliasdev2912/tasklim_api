@@ -19,8 +19,8 @@ const touchTask = async (taskId) => {
     await pool.query(updateTaskQuery, [taskId])
 
     const updatedTask = await getTaskById(taskId)
-    return updatedTask
 
+    return updatedTask
   } catch (error) {
     throw error
   }
