@@ -19,6 +19,7 @@ const verifyToken = require('../../middlewares/authMiddlewares.js');
 const ensureSpaceMember = require('../../middlewares/spaceMiddlewares.js');
 const teamExistsById = require('../teams/validations/teamExistsById.js');
 const deleteAssignee = require('./actions/deleteAssignee.js');
+const markTaskRead = require('./actions/markTaskRead.js');
 
 
 
@@ -143,6 +144,24 @@ router.post('/delete/assignee/:space_id', verifyToken, ensureSpaceMember, async 
     await deleteAssignee(taskId, teamId)
     const updatedTask = await touchTask(taskId)
     return res.status(200).json(updatedTask)
+  } catch (error) {
+    next(error)
+  }
+})
+
+router.post('/set/read_task/:space_id/:task_id', verifyToken, ensureSpaceMember, async (req, res, next) => {
+    const userId = req.user.id
+    const spaceId = req.params.space_id
+    const taskId = req.params.task_id
+
+    try {
+    await Promise.all([
+      userExistsById.error(userId),
+      spaceExistsById.error(spaceId)
+    ])
+
+    await markTaskRead(taskId, userId)
+    res.status(200).json({message: 'ok'})
   } catch (error) {
     next(error)
   }

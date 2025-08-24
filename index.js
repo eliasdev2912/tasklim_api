@@ -23,5 +23,6 @@ app.listen(port, () => {
     console.log(`- Environment: ${env}`);
     console.log(`- Version: ${version}`);
     console.log(`- Started at: ${now}`);
+    console.log(`- Database: ${process.env.DB_NAME}`)
     console.log('═'.repeat(30));
 });

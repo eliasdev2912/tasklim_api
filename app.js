@@ -6,7 +6,7 @@ require('dotenv').config();
 
 const errorHandler = require('./middlewares/errorHandler')
 
-// Routes
+// Import Routes
 const authRoute = require('./modules/users/authRoutes')
 const spaceRoute = require('./modules/spaces/spaceRoutes')
 const tasksRoute = require('./modules/tasks/taskRoutes')
@@ -15,9 +15,12 @@ const teamsRoute = require('./modules/teams/teamRoutes')
 const tagsRoute = require('./modules/tags/tagRoutes')
 const commentsRoute = require('./modules/comments/commentRoutes')
 
+// Import Events
+const taskCreatedSetUnreads = require('./modules/tasks/listeners/taskCreatedSetUnreads');
 
 
 
+// Middlewares
 app.use(cors()); // <- Esto permite todas las conexiones externas (no recomendado en producción)
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ limit: '20mb', extended: true }));
@@ -26,7 +29,7 @@ app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
 
 
-
+// Run Routes
 app.use('/api/comments', commentsRoute)
 app.use('/api/space', spaceRoute)
 app.use('/api/tables', tablesRoute)
@@ -35,7 +38,10 @@ app.use('/api/tasks', tasksRoute)
 app.use('/api/teams', teamsRoute)
 app.use('/api/auth', authRoute);
 
+// Run Events
+taskCreatedSetUnreads();
 
+// Error middleware
 app.use(errorHandler)
 
 

@@ -34,9 +34,6 @@ class ConflictError extends AppError {
   }
 }
 
-// Podés seguir con UnauthorizedError, ValidationError, etc.
-
-
 const sendError = (res, error) => {
   const statusCode = error instanceof AppError ? error.statusCode : 500;
 

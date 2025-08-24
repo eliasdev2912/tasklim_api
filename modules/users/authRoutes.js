@@ -42,7 +42,7 @@ router.get('/validate_token', verifyToken, async (req, res, next) => {
 
 router.get('/user/:id', verifyToken, async (req, res, next) => {
     const userId = req.params.id
-
+    
     const userQuery = `
     SELECT id, username, avatarurl, email
 FROM users
@@ -83,8 +83,9 @@ WHERE m.user_id = $1;
     }
 });
 
-router.post('/signin', async (req, res, next) => {
+router.post('/signup', async (req, res, next) => {
     const { username, email, password, passwordConfirm } = req.body;
+
     try {
         // Validación de argumentos
         if(!password) throw new BadRequestError('Missing arguments: password')

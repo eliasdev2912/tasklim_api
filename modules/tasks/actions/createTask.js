@@ -6,35 +6,34 @@ const userExistsById = require('../../users/validations/userExistsById');
 const tableExistsById = require('../../tables/validations/tableExistsById');
 const spaceExistsById = require('../../spaces/validations/spaceExistsById');
 
-
+const eventBus = require('../../event_bus/eventBus.js')
 
 
 const createTask = async (userId, tableId, spaceId, taskTitle) => {
-  const taskId = 'task-' + uuidv4()
   try {
     await Promise.all([
       userExistsById.error(userId),
       tableExistsById.error(tableId),
       spaceExistsById.error(spaceId)
     ])
-    if(!taskTitle) throw new BadRequestError('Missing arguments: task_title')
-    
+    if (!taskTitle) throw new BadRequestError('Missing arguments: task_title')
+
     const taskQuery = `
       INSERT INTO tasks (
-      id,
       created_by,
       space_id,
       table_id,
       title
       ) VALUES (
-       $1, $2, $3, $4, $5)
-      RETURNING *
+       $1, $2, $3, $4)
+      RETURNING id
        `
 
-    await pool.query(taskQuery, [taskId, userId, spaceId, tableId, taskTitle])
+    const taskId = (await pool.query(taskQuery, [userId, spaceId, tableId, taskTitle])).rows[0].id
 
     const newTask = await getTaskById(taskId)
 
+    eventBus.emit('taskCreatedSetUnreads', {task: newTask, spaceId: spaceId});
 
     return newTask
   } catch (error) {

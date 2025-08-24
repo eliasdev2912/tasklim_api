@@ -17,6 +17,7 @@ const getSpace = require('./queries/getSpace.js');
 const verifyInviteCode = require('./validations/verifyInviteCode.js');
 const leaveSpace = require('./actions/leaveSpace.js');
 const userExistsById = require('../users/validations/userExistsById.js');
+const getUnreadTasks = require('../tasks/quieries/getUnreadTasks.js');
 
 
 
@@ -45,13 +46,15 @@ router.post('/create', verifyToken, async (req, res, next) => {
 
 router.get('/get/:space_id', verifyToken, ensureSpaceMember, async (req, res, next) => {
   const spaceId = req.params.space_id;  // o donde venga spaceId
+  const userId = req.user.id
 
   try {
     if(!spaceId) throw new BadRequestError('Missing arguments: space_id')
       
     const space = await getSpace(spaceId)
+    const unreadTasks = await getUnreadTasks(spaceId, userId)
 
-    return res.json(space)
+    return res.json({...space, unreadTasks})
 
   } catch (error) {
     next(error)

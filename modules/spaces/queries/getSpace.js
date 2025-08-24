@@ -6,6 +6,7 @@ const { NotFoundError } = require("../../../utilities/errorsUtilities");
 const getSpaceTags = require('../../tags/queries/getSpaceTags');
 const getTasksBySpaceId = require('../../tasks/quieries/getTasksBySpaceId');
 const getSpaceTeams = require('../../teams/queries/getSpaceTeams');
+const getSpaceMembers = require('./getSpaceMembers');
 
 
 
@@ -23,16 +24,7 @@ const getSpace = async (spaceId) => {
       throw new NotFoundError('Space not found')
     }
 
-    const membersQuery = `
-  SELECT 
-    u.id,
-    u.username,
-    u.avatarurl,
-    m.user_rol AS role
-  FROM members_instances m
-  JOIN users u ON m.user_id = u.id
-  WHERE m.space_id = $1;
-`;
+    
     const tablesQuery = `
       SELECT * FROM space_tables
       WHERE space_id = $1
@@ -41,13 +33,13 @@ const getSpace = async (spaceId) => {
     const tasks = await getTasksBySpaceId(spaceId)
     const tags = await getSpaceTags(spaceId)
     const teams = await getSpaceTeams(spaceId)
+    const members = await getSpaceMembers(spaceId)
 
-    const membersResult = await pool.query(membersQuery, [spaceId])
     const tablesResult = await pool.query(tablesQuery, [spaceId])
 
     return {
       space: spaceResult.rows[0],
-      members: membersResult.rows,
+      members: members,
       tables: tablesResult.rows,
       tasks: tasks,
       tags: tags,
