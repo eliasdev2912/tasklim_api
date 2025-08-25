@@ -5,6 +5,7 @@ const findTableById = require('../queries/findTableById')
 const tableExistsByName = require('../validations/tableExistsByName');
 
 const { v4: uuidv4 } = require('uuid');
+const normalizeTablePositions = require('./normalizeTablePositions');
 
 
 
@@ -34,12 +35,7 @@ const createNewTable = async (spaceId, tableName, clientArg = null) => {
     `;
     await client.query(spaceTablesQuery, [spaceId, newTableId, tableName, tableIndex]);
 
-    const formatsQuery = `
-      INSERT INTO table_task_formats (table_id)
-      VALUES ($1);
-    `;
-    await client.query(formatsQuery, [newTableId]);
-
+    await normalizeTablePositions(spaceId, client)
     if (!clientArg) await client.query('COMMIT');
 
     return await findTableById(newTableId);

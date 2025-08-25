@@ -20,7 +20,8 @@ const tableExistsById = require('./validations/tableExistsById.js');
 const changeTableName = require('./actions/changeTableName.js');
 const changeTableColor = require('./actions/changeTableColor.js');
 const changeTablePosition = require('./actions/changeTablePosition.js')
-const changeTableFormat = require('./actions/changeTableFormat.js')
+const changeTableFormat = require('./actions/changeTableFormat.js');
+const deleteTable = require('./actions/deleteTable.js');
 
 
 
@@ -116,6 +117,25 @@ router.post('/edit/task_format/:space_id', verifyToken, ensureSpaceMember, async
 
     const updatedTable = await changeTableFormat(tableId, newFormat)
     return res.status(200).json(updatedTable)
+  } catch (error) {
+    next(error)
+  }
+})
+
+router.delete('/delete/:space_id/:table_id', verifyToken, ensureSpaceMember, async (req, res, next) => {
+  const spaceId = req.params.space_id;
+  const tableId = req.params.table_id;
+
+  try {
+    // Validaciones:
+    await Promise.all([
+       tableExistsById.error(tableId),
+       spaceExistsById.error(spaceId)
+    ])
+
+    // Core
+    await deleteTable(tableId, spaceId)
+    res.status(200).json({message: 'success'})
   } catch (error) {
     next(error)
   }

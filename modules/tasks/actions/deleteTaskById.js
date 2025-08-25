@@ -4,7 +4,7 @@ const taskExistsById = require('../validations/taskExistsById');
 
 
 
-const deleteTaskById = async (taskId) => {
+const deleteTaskById = async (taskId, client = pool) => {
   // Validar argumento taskId y existencia
   await taskExistsById.error(taskId)
 
@@ -13,7 +13,7 @@ const deleteTaskById = async (taskId) => {
   `
 
   try {
-    await pool.query(query, [taskId])
+    await client.query(query, [taskId])
 
   } catch (error) {
     throw error

@@ -2,7 +2,8 @@ const pool = require('../../../database');
 
 const { BadRequestError } = require("../../../utilities/errorsUtilities");
 const spaceExistsById = require('../../spaces/validations/spaceExistsById');
-const tableExistsById = require('../validations/tableExistsById')
+const tableExistsById = require('../validations/tableExistsById');
+const normalizeTablePositions = require('./normalizeTablePositions');
 
 
 
@@ -34,6 +35,8 @@ const changeTablePosition = async (spaceId, tableId, tableFromIndex, tableToInde
       `UPDATE space_tables SET table_position = $1 WHERE id = $2 AND space_id = $3`,
       [tableFromIndex, neighborTableId, spaceId]
     );
+
+    await normalizeTablePositions(spaceId, client)
 
     await client.query('COMMIT');
     return { success: true };
