@@ -1,7 +1,7 @@
-const isMember = require('../modules/spaces/validations/isMember.js');
-const spaceExistsById = require('../modules/spaces/validations/spaceExistsById.js');
-const userExistsById = require('../modules/users/validations/userExistsById.js');
-const { ForbiddenError } = require('../utilities/errorsUtilities.js');
+const isMember = require('../src/modules/spaces/validations/isMember.js');
+const spaceExistsById = require('../src/modules/spaces/validations/spaceExistsById.js');
+const userExistsById = require('../src/modules/users/validations/userExistsById.js');
+const { ForbiddenError } = require('../src/utilities/errorsUtilities.js');
 
 
 async function ensureSpaceMember(req, res, next) {

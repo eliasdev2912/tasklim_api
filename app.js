@@ -7,17 +7,17 @@ require('dotenv').config();
 const errorHandler = require('./middlewares/errorHandler')
 
 // Import Routes
-const authRoute = require('./modules/users/authRoutes')
-const spaceRoute = require('./modules/spaces/spaceRoutes')
-const tasksRoute = require('./modules/tasks/taskRoutes')
-const tablesRoute = require('./modules/tables/tableRoutes')
-const teamsRoute = require('./modules/teams/teamRoutes')
-const tagsRoute = require('./modules/tags/tagRoutes')
-const commentsRoute = require('./modules/comments/commentRoutes')
+const authRoute = require('./src/modules/users/authRoutes')
+const spaceRoute = require('./src/modules/spaces/spaceRoutes')
+const tasksRoute = require('./src/modules/tasks/taskRoutes')
+const tablesRoute = require('./src/modules/tables/tableRoutes')
+const teamsRoute = require('./src/modules/teams/teamRoutes')
+const tagsRoute = require('./src/modules/tags/tagRoutes')
+const commentsRoute = require('./src/modules/comments/commentRoutes')
 
 // Import Events
-const onTaskCreatedSetUnreads = require('./modules/tasks/listeners/onTaskCreatedSetUnreads');
-const onTaskUpdatedSetUnreads = require('./modules/tasks/listeners/onTaskUpdatedSetUnreads')
+const onTaskCreatedSetUnreads = require('./src/modules/tasks/listeners/onTaskCreatedSetUnreads');
+const onTaskUpdatedSetUnreads = require('./src/modules/tasks/listeners/onTaskUpdatedSetUnreads')
 
 
 // Middlewares
