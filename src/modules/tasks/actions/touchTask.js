@@ -6,9 +6,6 @@ const taskExistsById = require('../validations/taskExistsById');
 
 
 const touchTask = async (taskId, client = pool) => {
-  // Validar argument taskId y existencia
-  await taskExistsById.error(taskId)
-
   const updateTaskQuery = `
         UPDATE tasks
         SET updated_at = NOW()

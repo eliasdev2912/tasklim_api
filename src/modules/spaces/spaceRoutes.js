@@ -10,13 +10,10 @@ const verifyToken = require('../../../middlewares/authMiddlewares.js');
 const ensureSpaceMember = require('../../../middlewares/spaceMiddlewares.js')
 
 // Functions
-const { BadRequestError } = require('../../utilities/errorsUtilities.js');
 const createSpace = require('./actions/createSpace.js');
-const spaceExistsById = require('./validations/spaceExistsById.js');
 const getSpace = require('./queries/getSpace.js');
 const verifyInviteCode = require('./validations/verifyInviteCode.js');
 const leaveSpace = require('./actions/leaveSpace.js');
-const userExistsById = require('../users/validations/userExistsById.js');
 const getUnreadTasks = require('../tasks/quieries/getUnreadTasks.js');
 
 
@@ -40,12 +37,10 @@ router.post('/create', verifyToken, async (req, res, next) => {
 
 
 router.get('/get/:space_id', verifyToken, ensureSpaceMember, async (req, res, next) => {
-  const spaceId = req.params.space_id;  // o donde venga spaceId
+  const spaceId = req.params.space_id;
   const userId = req.user.id
 
   try {
-    if(!spaceId) throw new BadRequestError('Missing arguments: space_id')
-      
     const space = await getSpace(spaceId)
     const unreadTasks = await getUnreadTasks(spaceId, userId)
 
@@ -61,8 +56,6 @@ router.post('/create/invitation_code/:space_id', verifyToken, ensureSpaceMember,
   const expiresIn = '1h'; // o por minutos, horas, etc.
 
   try {
-    if(!spaceId) throw new BadRequestError('Missing arguments: space_id')
-
   const token = jwt.sign(
     { spaceId },
     process.env.JWT_INVITE_SECRET,
@@ -80,9 +73,7 @@ router.get('/verify/invitation/:token', verifyToken, async (req, res, next) => {
   const userId = req.user.id;
 
   try {
-    if(!token) throw new BadRequestError('Missing arguments: token')
-    await userExistsById.error(userId)
-
+    // verifyInviteCode valida la existencia del espacio
     const payload = await verifyInviteCode(token, userId)
 
     return res.status(200).json({
@@ -102,11 +93,6 @@ router.delete('/leave/:space_id', verifyToken, ensureSpaceMember, async (req, re
   const spaceId = req.params.space_id;
 
   try {
-    await Promise.all([
-      userExistsById.error(userId),
-      spaceExistsById.error(spaceId)
-    ])
-
     await leaveSpace(userId, spaceId)
     
     res.status(200).json({

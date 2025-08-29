@@ -1,8 +1,6 @@
 const pool = require('../../../../database');
-const { BadRequestError } = require('../../../utilities/errorsUtilities');
 const eventBus = require('../../event_bus/eventBus');
 const getTaskById = require('../quieries/getTaskById');
-const taskExistsById = require('../validations/taskExistsById');
 
 
 
@@ -11,13 +9,6 @@ const taskExistsById = require('../validations/taskExistsById');
 
 
 const setTaskContent = async (spaceId, taskId, newTitle, newDescription, newBody, updateAuthorId) => {
-    // Validar argumento taskId y existencia
-  await taskExistsById.error(taskId)
-  
-  if (!newTitle) {
-    throw new BadRequestError('Missing arguments: new_title')
-  }
-
   const query = `
   UPDATE tasks
   SET 

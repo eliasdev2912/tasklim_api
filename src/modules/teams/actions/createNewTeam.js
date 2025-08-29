@@ -2,6 +2,7 @@ const pool = require('../../../../database');
 const { BadRequestError, NotFoundError } = require('../../../utilities/errorsUtilities');
 const spaceExistsById = require('../../spaces/validations/spaceExistsById');
 const userExistsById = require('../../users/validations/userExistsById');
+const getTeamById = require('../queries/getTeamById');
 const teamExistsByName = require('../validations/teamExistsByName');
 
 
@@ -9,19 +10,8 @@ const teamExistsByName = require('../validations/teamExistsByName');
 
 
 const createNewTeam = async (spaceId, teamName, teamDescription, teamColor, teamBannerUrl, teamMembers) => {
-  // Validar argumentos y existencias
-  await spaceExistsById.error(spaceId)
-
   const teamExists = await teamExistsByName.bool(teamName, spaceId)
   if (teamExists) throw new ConflictError('Team already exists')
-
-  if (!teamDescription) throw new BadRequestError('Missing arguments: team_description')
-  if (!teamColor) throw new BadRequestError('Missing arguments: team_color')
-  if (!teamBannerUrl) throw new BadRequestError('Missing arguments: team_banner_url')
-
-  await Promise.all(teamMembers.map(userId => userExistsById.error(userId)));
-
-
 
   const client = await pool.connect();
 
@@ -40,15 +30,17 @@ const createNewTeam = async (spaceId, teamName, teamDescription, teamColor, team
     await client.query('BEGIN');
 
     const uppercaseTeamName = teamName.toUpperCase()
-    const result = await client.query(newTeamQuery, [spaceId, uppercaseTeamName, teamDescription, teamColor, teamBannerUrl]);
-    const newTeamId = result.rows[0].id;
+    const newRawTeam = (await client.query(newTeamQuery, [spaceId, uppercaseTeamName, teamDescription, teamColor, teamBannerUrl])).rows[0];
 
     for (const userId of teamMembers) {
       await client.query(newTeamMemberQuery, [newTeamId, userId]);
     }
 
+    const newTeam = await getTeamById(newRawTeam.id, client)
+
     await client.query('COMMIT');
-    return result.rows[0];
+    
+    return newTeam;
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;

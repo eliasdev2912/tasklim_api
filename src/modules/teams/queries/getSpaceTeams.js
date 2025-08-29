@@ -5,9 +5,6 @@ const spaceExistsById = require('../../spaces/validations/spaceExistsById');
 
 
 const getSpaceTeams = async (spaceId) => {
-  // Validar argumento y existencia
-  await spaceExistsById.error(spaceId)
-
   const client = await pool.connect()
 
   const teamsQuery = `SELECT * FROM teams WHERE space_id = $1`;

@@ -35,7 +35,8 @@ router.post('/create/:space_id', verifyToken, ensureSpaceMember, async (req, res
 
     // Core
     const newComment = await createComment(taskId, userId, commentBody, parentCommentId)
-    return res.status(200).json(newComment)
+
+    res.status(200).json(newComment)
   } catch (error) {
     next(error)
   }
@@ -50,7 +51,7 @@ router.post('/delete/:comment_id/:space_id', verifyToken, ensureSpaceMember, asy
 
     // Core
     const updatedTask = await deleteCommentById(commentId)
-    return res.status(200).json({message: 'success'})
+    return res.status(200).json({ message: 'success' })
 
   } catch (error) {
     next(error)

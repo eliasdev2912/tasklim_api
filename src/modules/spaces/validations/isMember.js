@@ -1,14 +1,6 @@
 const pool = require('../../../../database.js')
-const userExistsById = require("../../users/validations/userExistsById.js");
-const spaceExistsById = require("./spaceExistsById.js");
 
 const isMember = async (spaceId, userId) => {
-  // Validar existencia y argumentos
-  await Promise.all([
-    spaceExistsById.error(spaceId),
-    userExistsById.error(userId)
-  ])
-
   try {
     // 3. Verificar si el usuario es miembro del espacio
     const memberRes = await pool.query(

@@ -1,15 +1,13 @@
 const pool = require('../../../../database');
-const { BadRequestError, NotFoundError } = require('../../../utilities/errorsUtilities');
+const { NotFoundError } = require('../../../utilities/errorsUtilities');
 const getTaskComments = require('../../comments/queries/getTaskComments');
 
 
 
 
-const getTaskById = async (taskId, argClient) => {
-  // Validar argumentos
-  if(!taskId) throw new BadRequestError('Missing arguments: task_id')
-
-  const client = argClient || await pool.connect();
+const getTaskById = async (taskId, clientArg) => {
+  const externalClient = !!clientArg
+  const client = clientArg || await pool.connect();
 
   const taskContentQuery = `
     SELECT title, description, body, due_date FROM tasks WHERE id = $1;
@@ -59,7 +57,7 @@ WHERE tta.task_id = $1;
 
   try {
 
-    await client.query('BEGIN')
+    if (!externalClient) await client.query('BEGIN')
 
     const content = (await client.query(taskContentQuery, [taskId])).rows[0];
     const metadata = (await client.query(taskMetadataQuery, [taskId])).rows[0];
@@ -70,7 +68,7 @@ WHERE tta.task_id = $1;
 
     const relations = {table_id: tableResult, tags: tagsResult, comments, assignees: assigneesResult}
     
-    await client.query('COMMIT')
+    if (!externalClient) await client.query('COMMIT')
 
     if(!content ||  !metadata || !relations) {
       throw new NotFoundError('Task not found')
@@ -78,10 +76,10 @@ WHERE tta.task_id = $1;
 
     return {content, metadata, relations};
   } catch (error) {
-    await client.query('ROLLBACK')
+    if (!externalClient) await client.query('ROLLBACK')
     throw error
   } finally {
-    client.release()
+    if (!externalClient) client.release()
   }
 }
 

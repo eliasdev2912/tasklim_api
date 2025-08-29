@@ -1,25 +1,10 @@
 const pool = require('../../../../database')
 
-const Joi = require('joi')
-const { AppError, BadRequestError } = require('../../../utilities/errorsUtilities')
+const { AppError } = require('../../../utilities/errorsUtilities')
 const createMemberInstance = require('../../member_instances/actions/createMemberInstance')
 const createNewTable = require('../../tables/actions/createNewTable')
 
 const createSpace = async (userId, spaceName, spaceDescription) => {
-
-  // Validaciones
-  const { error: joiNameError, value: sanitizedName } = Joi.string().trim().min(1).required().validate(spaceName);
-  if (joiNameError) {
-    throw new BadRequestError(`Invalid argument: space_name`);
-  }
-
-  const { error: joiDescriptionError, value: sanitizedDescription } = Joi.string().trim().min(1).required().validate(spaceDescription);
-  if (joiDescriptionError) {
-    throw new BadRequestError(`Invalid argument: space_description`);
-  }
-
-  // Core
-
   const client = await pool.connect()
 
   try {
@@ -32,7 +17,7 @@ const createSpace = async (userId, spaceName, spaceDescription) => {
       RETURNING space_name, space_description, id
     `
 
-    const result = await client.query(spaceQuery, [sanitizedName, sanitizedDescription]);
+    const result = await client.query(spaceQuery, [spaceName, spaceDescription]);
     const newSpace = result.rows[0];
 
     if (!newSpace) throw new AppError('Error creating space')

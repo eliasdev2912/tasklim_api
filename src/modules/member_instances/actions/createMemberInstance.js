@@ -17,16 +17,13 @@ const createMemberInstance = async (userId, spaceId, role, clientArg = null) => 
   try {
     if (!clientArg) await client.query('BEGIN');
 
-    const { error: joiError, value: sanitizedRole } = Joi.string().trim().min(1).required().validate(role);
-    if (joiError) throw new BadRequestError('Invalid argument: member_role')
-
     const memberInstanceQuery = `
       INSERT INTO members_instances (user_id, space_id, user_rol)
       VALUES ($1, $2, $3)
       RETURNING user_id, space_id, user_rol
     `;
 
-    const result = await client.query(memberInstanceQuery, [userId, spaceId, sanitizedRole]);
+    const result = await client.query(memberInstanceQuery, [userId, spaceId, role]);
 
     if (!clientArg) await client.query('COMMIT');
 

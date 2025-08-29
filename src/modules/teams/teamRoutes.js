@@ -42,7 +42,6 @@ router.post('/create/:space_id', verifyToken, ensureSpaceMember, async (req, res
     }
 
     // Validaciones
-    await spaceExistsById.error(spaceId)
     await Promise.all(meta.teamMembers.map(userId => userExistsById.error(userId)))
 
     if (!meta.teamName) throw new BadRequestError('Missing arguments: team_name')
@@ -50,7 +49,7 @@ router.post('/create/:space_id', verifyToken, ensureSpaceMember, async (req, res
     if (!meta.teamColor) throw new BadRequestError('Missing arguments: team_color')
 
     // Crear equipo
-    const rawTeam = await createNewTeam(
+    const team = await createNewTeam(
       spaceId,
       meta.teamName,
       meta.teamDescription,
@@ -59,7 +58,6 @@ router.post('/create/:space_id', verifyToken, ensureSpaceMember, async (req, res
       meta.teamMembers
     )
 
-    const team = await getTeamById(rawTeam.id)
     res.status(200).json(team)
   } catch (error) {
     next(error)
@@ -72,8 +70,6 @@ router.get('/get/space_teams/:space_id', verifyToken, ensureSpaceMember, async (
   const spaceId = req.spaceId
 
   try {
-    await spaceExistsById.error(spaceId)
-
     const teams = getSpaceTeams(spaceId)
 
     return res.status(200).json(teams)

@@ -1,23 +1,11 @@
 const pool = require('../../../../database');
-const { BadRequestError } = require('../../../utilities/errorsUtilities');
-const { v4: uuidv4 } = require('uuid');
 const getTaskById = require('../quieries/getTaskById');
-const userExistsById = require('../../users/validations/userExistsById');
-const tableExistsById = require('../../tables/validations/tableExistsById');
-const spaceExistsById = require('../../spaces/validations/spaceExistsById');
 
 const eventBus = require('../../event_bus/eventBus.js')
 
 
 const createTask = async (userId, tableId, spaceId, taskTitle) => {
   try {
-    await Promise.all([
-      userExistsById.error(userId),
-      tableExistsById.error(tableId),
-      spaceExistsById.error(spaceId)
-    ])
-    if (!taskTitle) throw new BadRequestError('Missing arguments: task_title')
-
     const taskQuery = `
       INSERT INTO tasks (
       created_by,

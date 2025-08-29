@@ -9,12 +9,6 @@ const tagExistsById = require('../validations/tagExistsById');
 
 
 const deleteTaskTag = async (taskId, tagId) => {
-  // Validar argumentos y existencia
-  await Promise.all([
-    taskExistsById.error(taskId),
-    tagExistsById.error(tagId)
-  ])
-
   const client = await pool.connect();
 
   try {

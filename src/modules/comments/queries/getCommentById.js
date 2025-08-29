@@ -1,8 +1,9 @@
 const pool = require('../../../../database');
 
-const { BadRequestError } = require("../../../utilities/errorsUtilities")
+const { BadRequestError, AppError } = require("../../../utilities/errorsUtilities");
+const { commentSchema } = require('../commentSchema');
 
-
+const Joi = require('joi');
 
 
 
@@ -40,7 +41,12 @@ LEFT JOIN users u ON u.id = tc.user_id
 WHERE tc.id = $1
 `
   try {
-    const comment = (await client.query(query, [commentId])).rows[0]
+    const rawComment = (await client.query(query, [commentIdSanitized])).rows[0]
+
+    // Validar estructura del comentario
+    const { error, value: comment } = commentSchema.validate(rawComment);
+    if (error) throw error;
+
     return comment
   } catch (error) {
     throw error

@@ -4,9 +4,6 @@ const tagExistsById = require('../validations/tagExistsById');
 
 
 const getTagTaskCount = async (tagId) => {
-  // Validar argumento y existencia
-  await tagExistsById.error(tagId)
-
   const query = `
     SELECT COUNT(*) AS count
     FROM task_tags

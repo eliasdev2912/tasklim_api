@@ -31,16 +31,10 @@ router.post('/create/:space_id', verifyToken, ensureSpaceMember, async (req, res
   const spaceId = req.params.space_id
 
   try {
-    await Promise.all([
-      userExistsById.error(userId),
-      tableExistsById.error(tableId),
-      spaceExistsById.error(spaceId)
-    ])
-    if(!taskTitle) throw new BadRequestError('Missing arguments: task_title')
+    await tableExistsById.error(tableId)
 
     const newRawTask = await createTask(userId, tableId, spaceId, taskTitle)
     const newTask = await getTaskById(newRawTask.metadata.id)
-
 
     return res.status(200).json(newTask)
   } catch (error) {
@@ -56,7 +50,7 @@ router.delete('/delete/:id/:space_id', verifyToken, ensureSpaceMember, async (re
     await taskExistsById.error(taskId)
 
     await deleteTaskById(taskId)
-    return res.status(200).send('OK')
+    return res.status(200).json({message: 'success'})
 
   } catch (error) {
     next(error)
@@ -67,6 +61,8 @@ router.get('/get/:task_id/:space_id', verifyToken, ensureSpaceMember, async (req
   const taskId = req.params.task_id
 
   try {
+    await taskExistsById.error(taskId)
+
     const task = await getTaskById(taskId)
 
     return res.status(200).json(task)
@@ -84,7 +80,6 @@ router.post('/edit/content/:space_id', verifyToken, ensureSpaceMember, async (re
 
   try {
     await taskExistsById.error(taskId)
-    if(!newTitle) throw new BadRequestError('Missing arguments: new_title')
 
     const updatedTask = await setTaskContent(spaceId, taskId, newTitle, newDescription, newBody, clientId)
     return res.status(200).json(updatedTask)
@@ -122,8 +117,8 @@ router.post('/create/assignee/:space_id', verifyToken, ensureSpaceMember, async 
       taskExistsById.error(taskId),
       teamExistsById.error(teamId)
     ])
-    await addAssignee(taskId, teamId)
-    const updatedTask = await touchTask(taskId)
+    
+    const updatedTask = await addAssignee(taskId, teamId)
     return res.status(200).json(updatedTask)
   } catch (error) {
     next(error)
@@ -134,18 +129,13 @@ router.post('/create/assignee/:space_id', verifyToken, ensureSpaceMember, async 
 router.post('/delete/assignee/:space_id', verifyToken, ensureSpaceMember, async (req, res, next) => {
   const {taskId, teamId} = req.body
 
-  if(!taskId || !teamId) {
-        return sendError(res, 400, 'MISSING_REQUIRED_FIELDS', 'Missing required fields: task_id or team_id')
-  }
-
   try {
     await Promise.all([
       taskExistsById.error(taskId),
       teamExistsById.error(teamId)
     ])
 
-    await deleteAssignee(taskId, teamId)
-    const updatedTask = await touchTask(taskId)
+    const updatedTask = await deleteAssignee(taskId, teamId)
     return res.status(200).json(updatedTask)
   } catch (error) {
     next(error)
@@ -154,13 +144,10 @@ router.post('/delete/assignee/:space_id', verifyToken, ensureSpaceMember, async 
 
 router.post('/set/read_task/:space_id/:task_id', verifyToken, ensureSpaceMember, async (req, res, next) => {
     const userId = req.user.id
-    const spaceId = req.params.space_id
     const taskId = req.params.task_id
 
     try {
     await Promise.all([
-      userExistsById.error(userId),
-      spaceExistsById.error(spaceId),
       taskExistsById.error(taskId)
     ])
 

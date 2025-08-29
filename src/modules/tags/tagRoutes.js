@@ -23,13 +23,7 @@ router.post('/find_or_create/:space_id', verifyToken, ensureSpaceMember, async (
   const spaceId = req.params.space_id
 
   try {
-    await Promise.all([
-      spaceExistsById.error(spaceId),
-      taskExistsById.error(taskId)
-    ])
-    if(!tagName) throw new BadRequestError('Missing arguments: tag_name')
-    if(!tagColor) throw new BadRequestError('Missing arguments: tag_color')
-
+    await taskExistsById.error(taskId)
 
     const result = await findOrCreateTag(spaceId, taskId, tagName, tagColor);
     const updatedTask = await getTaskById(taskId);

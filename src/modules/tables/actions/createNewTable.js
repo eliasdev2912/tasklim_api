@@ -10,17 +10,11 @@ const normalizeTablePositions = require('./normalizeTablePositions');
 
 
 const createNewTable = async (spaceId, tableName, clientArg = null) => {
-  const shouldReleaseClient = !clientArg; // sólo liberamos si lo creamos nosotros
+  const externalClient = !!clientArg; // sólo liberamos si lo creamos nosotros
   const client = clientArg || await pool.connect();
 
   try {
-    if (!clientArg) await client.query('BEGIN'); // sólo abrimos transacción si no venía de antes
-
-    // Validaciones
-    await spaceExistsById.error(spaceId, client);
-
-    const existingTable = await tableExistsByName.bool(tableName, spaceId, client);
-    if (existingTable) throw new ConflictError('Table already exists');
+    if (!externalClient) await client.query('BEGIN'); // sólo abrimos transacción si no venía de antes
 
     // Core
     const newTableId = 'col-' + uuidv4();
@@ -36,15 +30,15 @@ const createNewTable = async (spaceId, tableName, clientArg = null) => {
     await client.query(spaceTablesQuery, [spaceId, newTableId, tableName, tableIndex]);
 
     await normalizeTablePositions(spaceId, client)
-    if (!clientArg) await client.query('COMMIT');
+    if (!externalClient) await client.query('COMMIT');
 
     return await findTableById(newTableId);
 
   } catch (error) {
-    if (!clientArg) await client.query('ROLLBACK');
+    if (!externalClient) await client.query('ROLLBACK');
     throw error;
   } finally {
-    if (shouldReleaseClient) client.release();
+    if (!externalClient) client.release();
   }
 };
 

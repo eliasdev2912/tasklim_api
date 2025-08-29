@@ -1,7 +1,6 @@
 const pool = require('../../../../database');
-
-const { BadRequestError } = require("../../../utilities/errorsUtilities")
-
+const Joi = require('joi');
+const { commentsArraySchema } = require('../commentSchema');
 
 
 
@@ -22,7 +21,6 @@ SELECT
         SELECT json_agg(
             json_build_object(
                 'id', r.id,
-                'task_id', r.task_id,
                 'body', r.body,
                 'created_at', r.created_at,
                 'created_by', json_build_object(
@@ -41,11 +39,13 @@ LEFT JOIN users u ON u.id = tc.user_id
 WHERE tc.task_id = $1
   AND tc.parent_comment_id IS NULL;
 `
-
     try {
-        const comments = (await client.query(query, [taskId])).rows
+        const rawComments = (await client.query(query, [taskId])).rows;
 
-        return comments
+        // validateAsync devuelve el array validado directamente
+        const comments = await commentsArraySchema.validateAsync(rawComments);
+
+        return comments;
     } catch (error) {
         throw error
     }

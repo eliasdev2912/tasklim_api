@@ -19,11 +19,6 @@ const getSpace = async (spaceId) => {
   WHERE id = $1;
         `;
     const spaceResult = await pool.query(spaceQuery, [spaceId])
-
-    if (!spaceResult.rows[0] || spaceResult.rowCount == 0) {
-      throw new NotFoundError('Space not found')
-    }
-
     
     const tablesQuery = `
       SELECT * FROM space_tables

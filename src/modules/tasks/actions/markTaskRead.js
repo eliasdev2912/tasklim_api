@@ -1,5 +1,4 @@
 const pool = require('../../../../database');
-const { BadRequestError } = require('../../../utilities/errorsUtilities');
 const isTaskUnreadForUser = require('../validations/isTaskUnreadForUser');
 
 const markTaskRead = async (taskId, userId) => {

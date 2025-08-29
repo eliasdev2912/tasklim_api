@@ -1,33 +1,31 @@
 const pool = require('../../../../database');
-const tableExistsById = require('../../tables/validations/tableExistsById');
 const getTaskById = require('../quieries/getTaskById');
-const taskExistsById = require('../validations/taskExistsById');
 const touchTask = require('./touchTask');
 
 
 
-const changeTaskTable = async (taskId, newTableId) => {
-
+const changeTaskTable = async (taskId, newTableId, clientArg) => {
+    const externalClient = !!clientArg
+    const client = clientArg || await pool.connect()
     try {
-        await Promise.all([
-            taskExistsById.error(taskId),
-            tableExistsById.error(newTableId)
-        ])
-
         const query = `
   UPDATE tasks
 SET table_id = $2
 WHERE id = $1;
   `
-
-        await pool.query(query, [taskId, newTableId])
-        await touchTask(taskId)
-        const updatedTask = await getTaskById(taskId)
+        if (!externalClient) await client.query('BEGIN')
+        await client.query(query, [taskId, newTableId])
+        await touchTask(taskId, client)
+        const updatedTask = await getTaskById(taskId, client)
+        if (!externalClient) await client.query('COMMIT')
 
         return updatedTask
 
     } catch (error) {
+        if (!externalClient) await client.query('ROLLBACK')
         throw error
+    } finally {
+        if (!externalClient) client.release()
     }
 }
 

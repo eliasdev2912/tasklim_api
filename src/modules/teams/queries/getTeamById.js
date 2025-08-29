@@ -8,8 +8,9 @@ const teamExistsById = require('../validations/teamExistsById');
 
 
 
-const getTeamById = async (teamId) => {
-  const client = await pool.connect();
+const getTeamById = async (teamId, clientArg) => {
+  const externalClient = !!clientArg;
+  const client = clientArg || await pool.connect();
 
   const teamQuery = `SELECT * FROM teams WHERE id = $1`;
 
@@ -26,24 +27,24 @@ const getTeamById = async (teamId) => {
   `;
 
   try {
-    await teamExistsById.error(teamId)
+    await teamExistsById.error(teamId);
 
-    await client.query('BEGIN');
+    if (!externalClient) await client.query('BEGIN');
 
     // 1. Obtener el equipo
     const teamResult = await client.query(teamQuery, [teamId]);
     const team = teamResult.rows[0];
 
     if (!team) {
-    await client.query('ROLLBACK');
-    return undefined;
-  }
+      if (!externalClient) await client.query('ROLLBACK');
+      return undefined;
+    }
 
-    // 2. Obtener los miembros del equipo usando el space_id del team
+    // 2. Obtener los miembros
     const membersResult = await client.query(membersQuery, [teamId, team.space_id]);
     const members = membersResult.rows;
 
-    await client.query('COMMIT');
+    if (!externalClient) await client.query('COMMIT');
 
     return {
       ...team,
@@ -51,12 +52,13 @@ const getTeamById = async (teamId) => {
     };
 
   } catch (error) {
-    await client.query('ROLLBACK');
+    if (!externalClient) await client.query('ROLLBACK');
     throw error;
   } finally {
-    client.release();
+    if (!externalClient) client.release();
   }
 };
+
 
 
 module.exports = getTeamById

@@ -8,11 +8,8 @@ const Joi = require('joi')
 const editCommentBody = async (commentId, newBody, client = pool) => {
     const query = `UPDATE task_comments SET body = $1 WHERE id = $2`
 
-    const { error: joiError, value: sanitizedBody } = Joi.string().trim().min(1).required().validate(newBody);
-    if (joiError) throw new BadRequestError('Invalid argument: new_body')
-
     try {
-        await client.query(query, [sanitizedBody, commentId])
+        await client.query(query, [newBody, commentId])
 
         return await getCommentById(commentId, client != pool ? client : undefined)
     } catch (error) {

@@ -23,8 +23,6 @@ router.get('/validate_token', verifyToken, async (req, res, next) => {
     const clientId = req.user.id;
 
     try {
-        await userExistsById.error(clientId)
-
         const query = `
       SELECT id, username, email, avatarurl
       FROM users
@@ -73,8 +71,6 @@ WHERE m.user_id = $1;
     `;
 
     try {
-        await userExistsById.error(userId)
-
         const userResult = await pool.query(userQuery, [userId])
         const spacesResult = await pool.query(spacesQuery, [userId]);
         res.json({ user: userResult.rows[0], spaces: spacesResult.rows });
@@ -142,9 +138,6 @@ router.post('/signup', async (req, res, next) => {
 router.post('/login', async (req, res, next) => {
     const { identifier, password } = req.body;
     try {
-        if(!identifier) throw new BadRequestError('Missing arguments: identifier')
-        if(!password) throw new BadRequestError('Missing arguments: password')
-
         const query = `
       SELECT id, username, email, password, avatarurl
       FROM users

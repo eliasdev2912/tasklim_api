@@ -8,8 +8,6 @@ const spaceExistsById = require('../../spaces/validations/spaceExistsById');
 
 
 const getSpaceTags = async (spaceId) => {
-  await spaceExistsById.error(spaceId)
-
   const query = `
     SELECT * FROM tags WHERE space_id = $1;
     `
