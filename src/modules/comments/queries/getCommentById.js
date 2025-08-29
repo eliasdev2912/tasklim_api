@@ -1,14 +1,12 @@
 const pool = require('../../../../database');
 
-const { BadRequestError, AppError } = require("../../../utilities/errorsUtilities");
+const runTransaction = require('../../../utilities/runTransaction');
 const { commentSchema } = require('../commentSchema');
 
-const Joi = require('joi');
 
-
-
-const getCommentById = async (commentId, client = pool) => {
-  const query = `
+const getCommentById = async (commentId, clientArg = pool) => {
+  return runTransaction(clientArg, async (client) => {
+    const query = `
 SELECT 
     tc.id,
     tc.body,
@@ -40,17 +38,13 @@ FROM task_comments tc
 LEFT JOIN users u ON u.id = tc.user_id
 WHERE tc.id = $1
 `
-  try {
-    const rawComment = (await client.query(query, [commentIdSanitized])).rows[0]
+      const rawComment = (await client.query(query, [commentId])).rows[0]
 
-    // Validar estructura del comentario
-    const { error, value: comment } = commentSchema.validate(rawComment);
-    if (error) throw error;
-
-    return comment
-  } catch (error) {
-    throw error
-  }
+      // Validar estructura del comentario
+      const { error, value: comment } = commentSchema.validate(rawComment);
+      if (error) throw error;
+      return comment
+  })
 }
 
 module.exports = getCommentById

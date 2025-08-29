@@ -65,7 +65,6 @@ router.post('/edit/body/:comment_id/:space_id', verifyToken, ensureSpaceMember, 
   try {
     await commentExistsById.error(commentId)
     const updatedComment = await editCommentBody(commentId, newBody);
-
     res.status(200).json(updatedComment)
   } catch (error) {
     next(error)

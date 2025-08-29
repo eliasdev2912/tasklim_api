@@ -1,12 +1,14 @@
 const pool = require('../../../../database');
 const Joi = require('joi');
 const { commentsArraySchema } = require('../commentSchema');
+const runTransaction = require('../../../utilities/runTransaction');
 
 
 
 
-const getTaskComments = async (taskId, client = pool) => {
-    const query = `
+const getTaskComments = async (taskId, clientArg = pool) => {
+    return runTransaction(clientArg, async (client) => {
+        const query = `
 SELECT 
     tc.id,
     tc.body,
@@ -39,16 +41,13 @@ LEFT JOIN users u ON u.id = tc.user_id
 WHERE tc.task_id = $1
   AND tc.parent_comment_id IS NULL;
 `
-    try {
         const rawComments = (await client.query(query, [taskId])).rows;
 
         // validateAsync devuelve el array validado directamente
         const comments = await commentsArraySchema.validateAsync(rawComments);
 
         return comments;
-    } catch (error) {
-        throw error
-    }
+    })
 }
 
 module.exports = getTaskComments

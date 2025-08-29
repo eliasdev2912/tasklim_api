@@ -1,20 +1,18 @@
 const pool = require('../../../../database');
-const { BadRequestError } = require('../../../utilities/errorsUtilities');
+const runTransaction = require('../../../utilities/runTransaction');
 const getCommentById = require('../queries/getCommentById');
-const Joi = require('joi')
 
 
 
-const editCommentBody = async (commentId, newBody, client = pool) => {
-    const query = `UPDATE task_comments SET body = $1 WHERE id = $2`
+const editCommentBody = async (commentId, newBody, clientArg = pool) => {
+    return runTransaction(clientArg, async (client) => {
+        const query = `UPDATE task_comments SET body = $1 WHERE id = $2`
 
-    try {
         await client.query(query, [newBody, commentId])
 
-        return await getCommentById(commentId, client != pool ? client : undefined)
-    } catch (error) {
-        throw error
-    }
+        const getCommentByIdClient = client != pool ? client : undefined
+        return await getCommentById(commentId, getCommentByIdClient)
+    })
 }
 
 module.exports = editCommentBody

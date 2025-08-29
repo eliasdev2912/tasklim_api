@@ -1,16 +1,14 @@
 const pool = require('../../../../database');
+const runTransaction = require('../../../utilities/runTransaction');
 const touchTask = require('../../tasks/actions/touchTask');
 const getTaskById = require('../../tasks/quieries/getTaskById');
 const getCommentById = require('../queries/getCommentById');
 
 
 
-const deleteCommentById = async (commentId) => {
-  const query = `DELETE FROM task_comments WHERE id = $1`
-
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
+const deleteCommentById = async (commentId, clientArg) => {
+  return runTransaction(clientArg, async (client) => {
+    const query = `DELETE FROM task_comments WHERE id = $1`
 
     const comment = await getCommentById(commentId, client)
     const taskId = comment.task_id
@@ -18,15 +16,8 @@ const deleteCommentById = async (commentId) => {
     await client.query(query, [commentId])
     await touchTask(taskId, client)
 
-    await client.query('COMMIT');
-
     return await getTaskById(taskId)
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error
-  } finally {
-    client.release()
-  }
+  })
 }
 
 module.exports = deleteCommentById
