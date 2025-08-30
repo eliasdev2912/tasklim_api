@@ -18,8 +18,6 @@ const getTeamById = async (teamId, clientArg) => {
     WHERE tmi.team_id = $1
   `;
 
-    if (!externalClient) await client.query('BEGIN');
-
     // 1. Obtener el equipo
     const teamResult = await client.query(teamQuery, [teamId]);
     const team = teamResult.rows[0];

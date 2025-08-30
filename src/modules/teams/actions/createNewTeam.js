@@ -26,7 +26,7 @@ const createNewTeam = async (spaceId, teamName, teamDescription, teamColor, team
     const newRawTeam = (await client.query(newTeamQuery, [spaceId, uppercaseTeamName, teamDescription, teamColor, teamBannerUrl])).rows[0];
 
     for (const userId of teamMembers) {
-      await client.query(newTeamMemberQuery, [newTeamId, userId]);
+      await client.query(newTeamMemberQuery, [newRawTeam.id, userId]);
     }
 
     const newTeam = await getTeamById(newRawTeam.id, client)
