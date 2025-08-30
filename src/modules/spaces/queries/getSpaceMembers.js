@@ -1,8 +1,9 @@
 const pool = require('../../../../database.js')
+const runTransaction = require('../../../utilities/runTransaction.js')
 
 
-const getSpaceMembers = async (spaceId) => {
-    try {
+const getSpaceMembers = async (spaceId, clientArg = pool) => {
+    return runTransaction(clientArg, async (client) => {
         const membersQuery = `
   SELECT 
     u.id,
@@ -12,12 +13,9 @@ const getSpaceMembers = async (spaceId) => {
   FROM members_instances m
   JOIN users u ON m.user_id = u.id
   WHERE m.space_id = $1;
-        `;
-    
-        const members = await pool.query(membersQuery, [spaceId])
+            `;
+        const members = await client.query(membersQuery, [spaceId])
         return members.rows
-    } catch (error) {
-        throw error
-    }
+    })
 }
 module.exports = getSpaceMembers

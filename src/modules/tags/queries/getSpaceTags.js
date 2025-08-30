@@ -1,25 +1,15 @@
 const pool = require('../../../../database');
-const spaceExistsById = require('../../spaces/validations/spaceExistsById');
+const runTransaction = require('../../../utilities/runTransaction');
 
 
-
-
-
-
-
-const getSpaceTags = async (spaceId) => {
-  const query = `
+const getSpaceTags = async (spaceId, clientArg = pool) => {
+  return runTransaction(clientArg, async(client) => {
+    const query = `
     SELECT * FROM tags WHERE space_id = $1;
     `
-
-  try {
-    const queryResult = await pool.query(query, [spaceId])
+    const queryResult = await client.query(query, [spaceId])
     return queryResult.rows
-
-  } catch (error) {
-    throw error
-  }
-
+  })
 }
 
 

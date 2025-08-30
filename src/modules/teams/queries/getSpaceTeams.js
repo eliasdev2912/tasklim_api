@@ -1,14 +1,10 @@
-const pool = require('../../../../database');
-const spaceExistsById = require('../../spaces/validations/spaceExistsById');
+const runTransaction = require('../../../utilities/runTransaction');
 
 
-
-
-const getSpaceTeams = async (spaceId) => {
-  const client = await pool.connect()
+const getSpaceTeams = async (spaceId, clientArg) => {
+  return runTransaction(clientArg, async (client) => {
 
   const teamsQuery = `SELECT * FROM teams WHERE space_id = $1`;
-
   const membersQuery = `
   SELECT
     tmi.team_id,
@@ -24,13 +20,10 @@ const getSpaceTeams = async (spaceId) => {
   );
 `;
 
-  try {
-    await client.query('BEGIN')
-
     const teamsResult = await client.query(teamsQuery, [spaceId]);
     const teams = teamsResult.rows;
 
-    const membersResult = await pool.query(membersQuery, [spaceId]);
+    const membersResult = await client.query(membersQuery, [spaceId]);
     const allMembers = membersResult.rows;
 
     const teamsWithMembers = teams.map(team => {
@@ -41,16 +34,8 @@ const getSpaceTeams = async (spaceId) => {
       };
     });
 
-    await client.query('COMMIT')
-
     return teamsWithMembers
-
-  } catch (error) {
-    await client.query('ROLLBACK')
-    throw error
-  } finally {
-    client.release()
-  }
+  })
 }
 
 

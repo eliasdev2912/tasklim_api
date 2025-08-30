@@ -1,21 +1,19 @@
 const pool = require('../../../../database');
-const tagExistsById = require('../validations/tagExistsById');
+const runTransaction = require('../../../utilities/runTransaction');
 
 
 
-const getTagTaskCount = async (tagId) => {
-  const query = `
+const getTagTaskCount = async (tagId, clientArg = pool) => {
+  return runTransaction(clientArg, async (client) => {
+    const query = `
     SELECT COUNT(*) AS count
     FROM task_tags
     WHERE tag_id = $1;
   `;
 
-  try {
-    const result = await pool.query(query, [tagId]);
+    const result = await client.query(query, [tagId]);
     return parseInt(result.rows[0].count, 10);
-  } catch (error) {
-    throw error
-  }
+  })
 };
 
 module.exports = getTagTaskCount

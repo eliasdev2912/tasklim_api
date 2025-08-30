@@ -1,17 +1,10 @@
-const pool = require('../../../../database');
-const { BadRequestError, NotFoundError } = require('../../../utilities/errorsUtilities');
-const spaceExistsById = require('../../spaces/validations/spaceExistsById');
+const runTransaction = require('../../../utilities/runTransaction');
 
 
 
 
-
-const getTasksBySpaceId = async (spaceId) => {
-  // Validar argumentos y existencia
-  await spaceExistsById.error(spaceId)
-
-  const client = await pool.connect();
-
+const getTasksBySpaceId = async (spaceId, clientArg) => {
+  return runTransaction(clientArg, async (client) => {
   // Queries base, se parametrizan con cada task.id individualmente
   const taskContentQuery = `
     SELECT title, description, body, due_date FROM tasks t WHERE id = $1;
@@ -95,9 +88,6 @@ const getTasksBySpaceId = async (spaceId) => {
   WHERE t.id = $1
 `
 
-  try {
-    await client.query('BEGIN');
-
     // Obtener todas las tareas del espacio
     const tasks = (await client.query(`
       SELECT id FROM tasks WHERE space_id = $1 ORDER BY updated_at DESC;
@@ -118,14 +108,8 @@ const getTasksBySpaceId = async (spaceId) => {
       };
     }));
 
-    await client.query('COMMIT');
     return results;
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
+  })
 };
 
 module.exports = getTasksBySpaceId

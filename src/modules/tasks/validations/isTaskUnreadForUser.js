@@ -1,10 +1,10 @@
 const pool = require('../../../../database');
-const { BadRequestError, NotFoundError } = require('../../../utilities/errorsUtilities');
+const runTransaction = require('../../../utilities/runTransaction');
 
 
 
-async function isTaskUnreadForUser(taskId, userId) {
-  try {
+async function isTaskUnreadForUser(taskId, userId, clientArg = pool) {
+  return runTransaction(clientArg, async (client) => {
     const query = `
     SELECT 1
     FROM task_unreads
@@ -13,11 +13,9 @@ async function isTaskUnreadForUser(taskId, userId) {
   `;
   const values = [taskId, userId];
 
-  const result = await pool.query(query, values);
+  const result = await client.query(query, values);
   return result.rowCount > 0; // true si ya existe
-  } catch (error) {
-    throw error
-  }
+  })
 }
 
 

@@ -1,28 +1,19 @@
 const pool = require('../../../../database');
-const getTaskById = require('./getTaskById');
+const runTransaction = require('../../../utilities/runTransaction');
 
 
-
-
-
-const getUnreadTasks = async (spaceId, userId) => {
- const query = `
+const getUnreadTasks = async (spaceId, userId, clientArg = pool) => {
+  return runTransaction(clientArg, async (client) => {
+    const query = `
   SELECT tu.*
   FROM task_unreads tu
   JOIN tasks t ON t.id = tu.task_id
   WHERE tu.user_id = $1
     AND t.space_id = $2;
 `;
-
-try {
-  const result = (await pool.query(query, [userId, spaceId])).rows;
-
+  const result = (await client.query(query, [userId, spaceId])).rows;
   return result;
-
-} catch (err) {
-  throw err;
-}
-
+  })
 };
 
 module.exports = getUnreadTasks

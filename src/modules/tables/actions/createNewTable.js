@@ -1,21 +1,12 @@
-const pool = require('../../../../database');
-const { ConflictError } = require('../../../utilities/errorsUtilities');
-const spaceExistsById = require('../../spaces/validations/spaceExistsById');
 const findTableById = require('../queries/findTableById')
-const tableExistsByName = require('../validations/tableExistsByName');
-
 const { v4: uuidv4 } = require('uuid');
 const normalizeTablePositions = require('./normalizeTablePositions');
+const runTransaction = require('../../../utilities/runTransaction');
 
 
 
-const createNewTable = async (spaceId, tableName, clientArg = null) => {
-  const externalClient = !!clientArg; // sólo liberamos si lo creamos nosotros
-  const client = clientArg || await pool.connect();
-
-  try {
-    if (!externalClient) await client.query('BEGIN'); // sólo abrimos transacción si no venía de antes
-
+const createNewTable = async (spaceId, tableName, clientArg) => {
+  return runTransaction(clientArg, async (client) => {
     // Core
     const newTableId = 'col-' + uuidv4();
 
@@ -30,16 +21,9 @@ const createNewTable = async (spaceId, tableName, clientArg = null) => {
     await client.query(spaceTablesQuery, [spaceId, newTableId, tableName, tableIndex]);
 
     await normalizeTablePositions(spaceId, client)
-    if (!externalClient) await client.query('COMMIT');
 
-    return await findTableById(newTableId);
-
-  } catch (error) {
-    if (!externalClient) await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    if (!externalClient) client.release();
-  }
+    return await findTableById(newTableId, client);
+  })
 };
 
 module.exports = createNewTable

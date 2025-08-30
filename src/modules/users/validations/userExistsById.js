@@ -1,19 +1,18 @@
 const pool = require('../../../../database');
 const { BadRequestError, NotFoundError } = require('../../../utilities/errorsUtilities');
+const runTransaction = require('../../../utilities/runTransaction');
 
 
-const userExistsById = async (userId) => {
-  if (!userId) throw new BadRequestError('Missing arguments: user_id')
+const userExistsById = async (userId, clientArg = pool) => {
+  return runTransaction(clientArg, async (client) => {
+    if (!userId) throw new BadRequestError('Missing arguments: user_id')
 
-  try {
-    const userRes = await pool.query(
+    const userRes = await client.query(
       'SELECT id FROM users WHERE id = $1 LIMIT 1;',
       [userId]
     );
     return userRes.rowCount > 0
-  } catch (error) {
-    throw error
-  }
+  })
 }
 userExistsById.bool = userExistsById
 userExistsById.error = async (userId) => {

@@ -1,16 +1,13 @@
 const pool = require('../../../../database');
+const runTransaction = require('../../../utilities/runTransaction');
 
-const deleteTaskById = async (taskId, client = pool) => {
-  const query = `
+const deleteTaskById = async (taskId, clientArg = pool) => {
+  return runTransaction(clientArg, async (client) => {
+    const query = `
     DELETE FROM tasks WHERE id = $1
   `
-
-  try {
     await client.query(query, [taskId])
-
-  } catch (error) {
-    throw error
-  }
+  })
 }
 
 module.exports = deleteTaskById

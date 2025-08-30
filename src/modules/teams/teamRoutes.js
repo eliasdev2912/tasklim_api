@@ -8,8 +8,6 @@ const upload = require('../../../middlewares/s3Uploader.js'); // importa el midd
 
 const { BadRequestError } = require('../../utilities/errorsUtilities.js');
 const createNewTeam = require('./actions/createNewTeam.js');
-const spaceExistsById = require('../spaces/validations/spaceExistsById.js');
-const getTeamById = require('./queries/getTeamById.js');
 const getSpaceTeams = require('./queries/getSpaceTeams.js');
 const userExistsById = require('../users/validations/userExistsById.js');
 

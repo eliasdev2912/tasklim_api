@@ -7,12 +7,12 @@ const Joi = require('joi')
 // Middlewares
 const verifyToken = require('../../../middlewares/authMiddlewares.js');
 const ensureSpaceMember = require('../../../middlewares/spaceMiddlewares.js');
+
+// Utilidades
 const taskExistsById = require('../tasks/validations/taskExistsById.js');
-const { BadRequestError } = require('../../utilities/errorsUtilities.js');
-const createComment = require('./actions/createComment.js');
 const commentExistsById = require('./validations/commentExistsById.js');
+const createComment = require('./actions/createComment.js');
 const deleteCommentById = require('./actions/deleteCommentById.js');
-const userExistsById = require('../users/validations/userExistsById.js');
 const editCommentBody = require('./actions/editCommentBody.js');
 
 
@@ -50,7 +50,7 @@ router.post('/delete/:comment_id/:space_id', verifyToken, ensureSpaceMember, asy
     await commentExistsById.error(commentId)
 
     // Core
-    const updatedTask = await deleteCommentById(commentId)
+    await deleteCommentById(commentId)
     return res.status(200).json({ message: 'success' })
 
   } catch (error) {

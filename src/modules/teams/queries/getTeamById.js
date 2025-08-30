@@ -1,19 +1,11 @@
-const pool = require('../../../../database');
-const teamExistsById = require('../validations/teamExistsById');
-
-
-
-
-
+const { NotFoundError } = require('../../../utilities/errorsUtilities');
+const runTransaction = require('../../../utilities/runTransaction');
 
 
 
 const getTeamById = async (teamId, clientArg) => {
-  const externalClient = !!clientArg;
-  const client = clientArg || await pool.connect();
-
+  return runTransaction(clientArg, async (client) => {
   const teamQuery = `SELECT * FROM teams WHERE id = $1`;
-
   const membersQuery = `
     SELECT
       u.id AS user_id,
@@ -26,9 +18,6 @@ const getTeamById = async (teamId, clientArg) => {
     WHERE tmi.team_id = $1
   `;
 
-  try {
-    await teamExistsById.error(teamId);
-
     if (!externalClient) await client.query('BEGIN');
 
     // 1. Obtener el equipo
@@ -36,27 +25,18 @@ const getTeamById = async (teamId, clientArg) => {
     const team = teamResult.rows[0];
 
     if (!team) {
-      if (!externalClient) await client.query('ROLLBACK');
-      return undefined;
+      throw new NotFoundError('Team not found')
     }
 
     // 2. Obtener los miembros
     const membersResult = await client.query(membersQuery, [teamId, team.space_id]);
     const members = membersResult.rows;
 
-    if (!externalClient) await client.query('COMMIT');
-
     return {
       ...team,
       members,
     };
-
-  } catch (error) {
-    if (!externalClient) await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    if (!externalClient) client.release();
-  }
+  })
 };
 
 

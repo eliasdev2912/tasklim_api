@@ -1,15 +1,12 @@
-const pool = require('../../../../database');
+const runTransaction = require('../../../utilities/runTransaction');
 const eventBus = require('../../event_bus/eventBus');
 const getTaskById = require('../quieries/getTaskById');
 
 
 
-
-
-
-
-const setTaskContent = async (spaceId, taskId, newTitle, newDescription, newBody, updateAuthorId) => {
-  const query = `
+const setTaskContent = async (spaceId, taskId, newTitle, newDescription, newBody, updateAuthorId, clientArg) => {
+  return runTransaction(clientArg, async (client) => {
+     const query = `
   UPDATE tasks
   SET 
    title = $2,
@@ -19,14 +16,11 @@ const setTaskContent = async (spaceId, taskId, newTitle, newDescription, newBody
   WHERE id = $1;
   `
 
-  try {
-    await pool.query(query, [taskId, newTitle, newDescription, newBody])
-    const updatedTask = await getTaskById(taskId)
+    await client.query(query, [taskId, newTitle, newDescription, newBody])
+    const updatedTask = await getTaskById(taskId, client)
     eventBus.emit('taskUpdated', {task: updatedTask, updateAuthorId, spaceId})
     return updatedTask
-  } catch (error) {
-    throw error
-  }
+  })
 }
 
 module.exports = setTaskContent

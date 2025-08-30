@@ -1,18 +1,17 @@
-const pool = require('../../../../database');
 const { NotFoundError } = require('../../../utilities/errorsUtilities');
+const runTransaction = require('../../../utilities/runTransaction');
 const getTaskComments = require('../../comments/queries/getTaskComments');
 
 
 
 
 const getTaskById = async (taskId, clientArg) => {
-  const externalClient = !!clientArg
-  const client = clientArg || await pool.connect();
+  return runTransaction(clientArg, async (client) => {
 
-  const taskContentQuery = `
+    const taskContentQuery = `
     SELECT title, description, body, due_date FROM tasks WHERE id = $1;
-  `
-const taskMetadataQuery = `
+    `
+    const taskMetadataQuery = `
   SELECT 
     t.id,
     t.created_at,
@@ -32,18 +31,18 @@ const taskMetadataQuery = `
 
   FROM tasks t
   WHERE t.id = $1
-`;
+    `
 
-const tableQuery = `
+    const tableQuery = `
 SELECT table_id FROM tasks WHERE id = $1;
-`
-const tagsQuery = `
+    `
+    const tagsQuery = `
 SELECT tg.id, tg.name, tg.color
 FROM task_tags tt
 JOIN tags tg ON tg.id = tt.tag_id
 WHERE tt.task_id = $1;
-`
-const assigneesQuery = `
+    `
+    const assigneesQuery = `
 SELECT 
     tea.id,
     tea.name,
@@ -53,11 +52,7 @@ SELECT
 FROM task_team_assignments tta
 LEFT JOIN teams tea ON tta.team_id = tea.id
 WHERE tta.task_id = $1;
-`
-
-  try {
-
-    if (!externalClient) await client.query('BEGIN')
+    `
 
     const content = (await client.query(taskContentQuery, [taskId])).rows[0];
     const metadata = (await client.query(taskMetadataQuery, [taskId])).rows[0];
@@ -66,21 +61,14 @@ WHERE tta.task_id = $1;
     const assigneesResult = (await client.query(assigneesQuery, [taskId])).rows
     const comments = await getTaskComments(taskId, client);
 
-    const relations = {table_id: tableResult, tags: tagsResult, comments, assignees: assigneesResult}
-    
-    if (!externalClient) await client.query('COMMIT')
+    const relations = { table_id: tableResult, tags: tagsResult, comments, assignees: assigneesResult }
 
-    if(!content ||  !metadata || !relations) {
+    if (!content || !metadata || !relations) {
       throw new NotFoundError('Task not found')
-    } 
+    }
 
-    return {content, metadata, relations};
-  } catch (error) {
-    if (!externalClient) await client.query('ROLLBACK')
-    throw error
-  } finally {
-    if (!externalClient) client.release()
-  }
+    return { content, metadata, relations };
+  })
 }
 
 module.exports = getTaskById

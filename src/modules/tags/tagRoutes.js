@@ -6,8 +6,6 @@ require('dotenv').config();
 const findOrCreateTag = require('./actions/findOrCreateTag.js')
 const verifyToken = require('../../../middlewares/authMiddlewares.js');
 const ensureSpaceMember = require('../../../middlewares/spaceMiddlewares.js');
-const spaceExistsById = require('../spaces/validations/spaceExistsById.js');
-const { BadRequestError } = require('../../utilities/errorsUtilities.js');
 const tagExistsById = require('./validations/tagExistsById.js');
 const taskExistsById = require('../tasks/validations/taskExistsById.js');
 const getTaskById = require('../tasks/quieries/getTaskById.js');

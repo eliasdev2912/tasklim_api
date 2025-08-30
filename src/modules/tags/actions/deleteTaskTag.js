@@ -1,19 +1,11 @@
-const pool = require('../../../../database');
+const runTransaction = require('../../../utilities/runTransaction');
 const touchTask = require('../../tasks/actions/touchTask');
-const taskExistsById = require('../../tasks/validations/taskExistsById');
 const getTagTaskCount = require('../queries/getTagTaskCount');
-const tagExistsById = require('../validations/tagExistsById');
 
 
 
-
-
-const deleteTaskTag = async (taskId, tagId) => {
-  const client = await pool.connect();
-
-  try {
-    await client.query('BEGIN');
-
+const deleteTaskTag = async (taskId, tagId, clientArg) => {
+  return runTransaction(clientArg, async (client) => {
     // 1️⃣ Borra SOLO la relación task-tag específica
     const deleteTaskTagQuery = `
       DELETE FROM task_tags 
@@ -21,26 +13,17 @@ const deleteTaskTag = async (taskId, tagId) => {
     `;
     await client.query(deleteTaskTagQuery, [tagId, taskId]);
 
-
-    await client.query('COMMIT');
-
     // 2️⃣ Verifica cuántas quedan después de borrarla
-    const tagTaskCount = await getTagTaskCount(tagId);
+    const tagTaskCount = await getTagTaskCount(tagId, client);
     if (tagTaskCount == 0) {
       // Si quedó huérfano: eliminar tag
       const deleteTagQuery = `DELETE FROM tags WHERE id = $1`;
       await client.query(deleteTagQuery, [tagId]);
     }
 
-    const updatedTask = await touchTask(taskId)
+    const updatedTask = await touchTask(taskId, client)
     return { updatedTask }
-
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
+  })
 };
 
 module.exports = deleteTaskTag

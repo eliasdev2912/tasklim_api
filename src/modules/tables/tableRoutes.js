@@ -1,20 +1,14 @@
 const express = require('express');
 const router = express.Router();
 
-const pool = require('../../../database.js')
-
 require('dotenv').config();
-
-var jwt = require('jsonwebtoken');
 
 // Middlewares
 const verifyToken = require('../../../middlewares/authMiddlewares.js');
 const ensureSpaceMember = require('../../../middlewares/spaceMiddlewares.js')
 
 // Functions
-const { sendError, BadRequestError, ConflictError } = require('../../utilities/errorsUtilities.js');
-const spaceExistsById = require('../spaces/validations/spaceExistsById.js');
-const findTableByName = require('./queries/findTableByName.js');
+const { BadRequestError, ConflictError } = require('../../utilities/errorsUtilities.js');
 const createNewTable = require('./actions/createNewTable.js');
 const tableExistsById = require('./validations/tableExistsById.js');
 const changeTableName = require('./actions/changeTableName.js');

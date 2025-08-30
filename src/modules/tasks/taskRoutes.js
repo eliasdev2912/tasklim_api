@@ -4,8 +4,6 @@ const router = express.Router();
 require('dotenv').config();
 
 const tableExistsById = require('../tables/validations/tableExistsById.js');
-const spaceExistsById = require('../spaces/validations/spaceExistsById.js');
-const { BadRequestError } = require('../../utilities/errorsUtilities.js');
 const createTask = require('./actions/createTask.js');
 const taskExistsById = require('./validations/taskExistsById.js');
 const deleteTaskById = require('./actions/deleteTaskById.js');
@@ -13,8 +11,6 @@ const getTaskById = require('./quieries/getTaskById.js');
 const setTaskContent = require('./actions/setTaskContent.js');
 const changeTaskTable = require('./actions/changeTaskTable.js');
 const addAssignee = require('./actions/addAssignee.js');
-const touchTask = require('./actions/touchTask.js');
-const userExistsById = require('../users/validations/userExistsById.js');
 const verifyToken = require('../../../middlewares/authMiddlewares.js');
 const ensureSpaceMember = require('../../../middlewares/spaceMiddlewares.js');
 const teamExistsById = require('../teams/validations/teamExistsById.js');
