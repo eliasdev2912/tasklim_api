@@ -1,6 +1,6 @@
 // modules/tasks/listeners/notifyAdmins.js
 const eventBus = require('../../event_bus/eventBus');
-const getSpaceMembers = require('../../spaces/queries/getSpaceMembers');
+const getSpaceMembers = require('../../member_instances/queries/getSpaceMembers');
 const spaceExistsById = require('../../spaces/validations/spaceExistsById');
 const userExistsById = require('../../users/validations/userExistsById');
 const markTaskUnread = require('../actions/markTaskUnread');

@@ -36,7 +36,7 @@ router.post('/create', verifyToken, async (req, res, next) => {
 });
 
 
-router.get('/get/:space_id', verifyToken, ensureSpaceMember, async (req, res, next) => {
+router.get('/get/context/:space_id', verifyToken, ensureSpaceMember, async (req, res, next) => {
   const spaceId = req.params.space_id;
   const userId = req.user.id
 

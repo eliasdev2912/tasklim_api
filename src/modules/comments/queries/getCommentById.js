@@ -15,7 +15,9 @@ SELECT
     json_build_object(
         'id', u.id,
         'username', u.username,
-        'avatarurl', u.avatarurl
+        'avatarurl', u.avatarurl,
+        'email', u.email,
+        'role', mmi.user_rol
     ) AS created_by,
     COALESCE((
         SELECT json_agg(
@@ -26,16 +28,20 @@ SELECT
                 'created_by', json_build_object(
                     'id', ru.id,
                     'username', ru.username,
-                    'avatarurl', ru.avatarurl
+                    'avatarurl', ru.avatarurl,
+                    'email', ru.email,
+                    'role', mi.user_rol
                 )
             )
         )
         FROM task_comments r
         LEFT JOIN users ru ON ru.id = r.user_id
+        LEFT JOIN members_instances mi ON mi.user_id = ru.id
         WHERE r.parent_comment_id = tc.id
     ), '[]'::json) AS replies
 FROM task_comments tc
 LEFT JOIN users u ON u.id = tc.user_id
+LEFT JOIN members_instances mmi ON mmi.user_id = tc.user_id
 WHERE tc.id = $1
 `
       const rawComment = (await client.query(query, [commentId])).rows[0]

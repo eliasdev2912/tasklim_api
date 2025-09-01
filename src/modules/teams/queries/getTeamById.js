@@ -1,5 +1,6 @@
 const { NotFoundError } = require('../../../utilities/errorsUtilities');
 const runTransaction = require('../../../utilities/runTransaction');
+const { teamSchema } = require('../teamSchema');
 
 
 
@@ -19,21 +20,23 @@ const getTeamById = async (teamId, clientArg) => {
   `;
 
     // 1. Obtener el equipo
-    const teamResult = await client.query(teamQuery, [teamId]);
-    const team = teamResult.rows[0];
+    const rawTeamResult = await client.query(teamQuery, [teamId]);
+    const rawTeam = rawTeamResult.rows[0];
 
-    if (!team) {
+    if (!rawTeam) {
       throw new NotFoundError('Team not found')
     }
 
     // 2. Obtener los miembros
-    const membersResult = await client.query(membersQuery, [teamId, team.space_id]);
+    const membersResult = await client.query(membersQuery, [teamId, rawTeam.space_id]);
     const members = membersResult.rows;
 
-    return {
-      ...team,
-      members,
-    };
+    const teamObject = {...rawTeam, members}
+
+    const {error, value: team} = teamSchema.validate(teamObject)
+    if(error) throw error
+
+    return team
   })
 };
 

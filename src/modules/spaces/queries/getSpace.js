@@ -2,7 +2,7 @@ const runTransaction = require('../../../utilities/runTransaction');
 const getSpaceTags = require('../../tags/queries/getSpaceTags');
 const getTasksBySpaceId = require('../../tasks/quieries/getTasksBySpaceId');
 const getSpaceTeams = require('../../teams/queries/getSpaceTeams');
-const getSpaceMembers = require('./getSpaceMembers');
+const getSpaceMembers = require('../../member_instances/queries/getSpaceMembers');
 
 
 
