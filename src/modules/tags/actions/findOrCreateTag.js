@@ -38,11 +38,10 @@ const findOrCreateTag = async (spaceId, taskId, tagName, tagColor, clientArg) =>
     }
 
     const tagQuery = `
-         INSERT INTO tags (id, space_id, name, color)
-         VALUES ($1, $2, $3, $4)
+         INSERT INTO tags (space_id, name, color)
+         VALUES ($1, $2, $3)
          RETURNING *
         `
-    const newTagId = uuidv4()
 
     const taskTagQuery = `
          INSERT INTO task_tags (task_id, tag_id)
@@ -50,7 +49,7 @@ const findOrCreateTag = async (spaceId, taskId, tagName, tagColor, clientArg) =>
          RETURNING *
         `
 
-    const newTagResult = await client.query(tagQuery, [newTagId, spaceId, upperCaseTagName, tagColor])
+    const newTagResult = await client.query(tagQuery, [spaceId, upperCaseTagName, tagColor])
     const newTag = newTagResult.rows[0]
 
     const taskTagResult = await client.query(taskTagQuery, [taskId, newTag.id])

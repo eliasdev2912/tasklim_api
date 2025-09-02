@@ -8,21 +8,19 @@ const runTransaction = require('../../../utilities/runTransaction');
 const createNewTable = async (spaceId, tableName, clientArg) => {
   return runTransaction(clientArg, async (client) => {
     // Core
-    const newTableId = 'col-' + uuidv4();
-
     const tableIndexQuery = `SELECT COUNT(*) FROM space_tables WHERE space_id = $1;`;
     const tableIndexResult = await client.query(tableIndexQuery, [spaceId]);
     const tableIndex = parseInt(tableIndexResult.rows[0].count, 10);
 
-    const spaceTablesQuery = `
-      INSERT INTO space_tables (space_id, id, name, table_position)
-      VALUES ($1, $2, $3, $4);
+    const spaceTableQuery = `
+      INSERT INTO space_tables (space_id, name, table_position)
+      VALUES ($1, $2, $3);
     `;
-    await client.query(spaceTablesQuery, [spaceId, newTableId, tableName, tableIndex]);
+    const rawTable = await client.query(spaceTableQuery, [spaceId, tableName, tableIndex]);
 
     await normalizeTablePositions(spaceId, client)
 
-    return await findTableById(newTableId, client);
+    return await findTableById(rawTable.id, client);
   })
 };
 

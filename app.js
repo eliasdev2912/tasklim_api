@@ -7,13 +7,14 @@ require('dotenv').config();
 const errorHandler = require('./middlewares/errorHandler')
 
 // Import Routes
-const authRoute = require('./src/modules/users/authRoutes')
-const spaceRoute = require('./src/modules/spaces/spaceRoutes')
-const tasksRoute = require('./src/modules/tasks/taskRoutes')
-const tablesRoute = require('./src/modules/tables/tableRoutes')
-const teamsRoute = require('./src/modules/teams/teamRoutes')
-const tagsRoute = require('./src/modules/tags/tagRoutes')
-const commentsRoute = require('./src/modules/comments/commentRoutes')
+const authRoutes = require('./src/modules/auth/authRoutes')
+const userRoutes = require('./src/modules/users/userRoutes')
+const spaceRoutes = require('./src/modules/spaces/spaceRoutes')
+const taskRoutes = require('./src/modules/tasks/taskRoutes')
+const tableRoutes = require('./src/modules/tables/tableRoutes')
+const teamRoutes = require('./src/modules/teams/teamRoutes')
+const tagRoutes = require('./src/modules/tags/tagRoutes')
+const commentRoutes = require('./src/modules/comments/commentRoutes')
 
 // Import Events
 const onTaskCreatedSetUnreads = require('./src/modules/tasks/listeners/onTaskCreatedSetUnreads');
@@ -30,13 +31,14 @@ app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
 
 // Run Routes
-app.use('/api/comments', commentsRoute)
-app.use('/api/space', spaceRoute)
-app.use('/api/tables', tablesRoute)
-app.use('/api/tags', tagsRoute)
-app.use('/api/tasks', tasksRoute)
-app.use('/api/teams', teamsRoute)
-app.use('/api/auth', authRoute);
+app.use('/api/comments', commentRoutes)
+app.use('/api/space', spaceRoutes)
+app.use('/api/tables', tableRoutes)
+app.use('/api/tags', tagRoutes)
+app.use('/api/tasks', taskRoutes)
+app.use('/api/teams', teamRoutes)
+app.use('/api/auth', authRoutes)
+app.use('/api/users', userRoutes)
 
 // Run Events
 onTaskCreatedSetUnreads();
