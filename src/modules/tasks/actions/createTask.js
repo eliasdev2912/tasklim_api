@@ -21,7 +21,7 @@ const createTask = async (userId, tableId, spaceId, taskTitle, clientArg) => {
 
     const newTask = await getTaskById(taskId, client)
 
-    eventBus.emit('taskCreatedSetUnreads', {task: newTask, spaceId: spaceId});
+    eventBus.emit('taskCreatedSetUnreads', {task: newTask, spaceId, clientArg: client});
 
     return newTask
   })

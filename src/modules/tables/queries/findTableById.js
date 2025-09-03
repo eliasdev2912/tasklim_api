@@ -1,5 +1,6 @@
 const pool = require('../../../../database')
 const runTransaction = require('../../../utilities/runTransaction')
+const { tableSchema } = require('../tableSchema')
 
 
 const findTableById = async (tableId, clientArg = pool) => {
@@ -8,9 +9,13 @@ const findTableById = async (tableId, clientArg = pool) => {
         SELECT * FROM space_tables
         WHERE id = $1
       `
-    const result = await client.query(query, [tableId])
+    const rawTable = (await client.query(query, [tableId])).rows[0]
 
-    return result.rows[0]
+    // Validar esquema 
+    const {error, value: table } = tableSchema.validate(rawTable)
+    if(error) throw error
+
+    return table
   })
 }
 

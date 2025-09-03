@@ -16,10 +16,6 @@ const teamRoutes = require('./src/modules/teams/teamRoutes')
 const tagRoutes = require('./src/modules/tags/tagRoutes')
 const commentRoutes = require('./src/modules/comments/commentRoutes')
 
-// Import Events
-const onTaskCreatedSetUnreads = require('./src/modules/tasks/listeners/onTaskCreatedSetUnreads');
-const onTaskUpdatedSetUnreads = require('./src/modules/tasks/listeners/onTaskUpdatedSetUnreads')
-
 
 // Middlewares
 app.use(cors()); // <- Esto permite todas las conexiones externas (no recomendado en producción)
@@ -40,9 +36,7 @@ app.use('/api/teams', teamRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
 
-// Run Events
-onTaskCreatedSetUnreads();
-onTaskUpdatedSetUnreads();
+
 
 
 

@@ -7,7 +7,7 @@ const teamSchema = Joi.object({
     name: Joi.string()
             .trim()
             .min(1)
-            .pattern(/^[A-Z0-9\-\/_]+$/) // letras mayúsculas, números y '-', '/', '_'
+            .pattern(/^[A-ZÁÉÍÓÚ0-9\-\/_ ]+$/) // letras mayúsculas, números y '-', '/', '_'
             .required(),
     color: Joi.string().trim().min(1).required(),
     description: Joi.string().trim().min(1).required(),

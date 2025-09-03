@@ -9,7 +9,7 @@ const ensureSpaceMember = require('../../../middlewares/spaceMiddlewares.js');
 const tagExistsById = require('./validations/tagExistsById.js');
 const taskExistsById = require('../tasks/validations/taskExistsById.js');
 const getTaskById = require('../tasks/quieries/getTaskById.js');
-const deleteTaskTag = require('./actions/deleteTaskTag.js');
+const deleteTaskTag = require('../tasks/actions/deleteTaskTag.js');
 
 
 

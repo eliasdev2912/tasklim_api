@@ -3,6 +3,7 @@ const getSpaceTags = require('../../tags/queries/getSpaceTags');
 const getTasksBySpaceId = require('../../tasks/quieries/getTasksBySpaceId');
 const getSpaceTeams = require('../../teams/queries/getSpaceTeams');
 const getSpaceMembers = require('../../member_instances/queries/getSpaceMembers');
+const { spaceSchema } = require('../spaceSchema');
 
 
 
@@ -28,7 +29,7 @@ const getSpace = async (spaceId, clientArg) => {
 
     const tablesResult = await client.query(tablesQuery, [spaceId])
 
-    return {
+    const rawSpace = {
       space: spaceResult.rows[0],
       members: members,
       tables: tablesResult.rows,
@@ -36,6 +37,12 @@ const getSpace = async (spaceId, clientArg) => {
       tags: tags,
       teams: teams
     }
+
+    // Validar esquema de 'space'
+    const {error, value: space} = spaceSchema.validate(rawSpace)
+    if(error) throw error
+
+    return space
   })
 }
 

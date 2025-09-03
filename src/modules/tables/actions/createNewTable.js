@@ -14,9 +14,10 @@ const createNewTable = async (spaceId, tableName, clientArg) => {
 
     const spaceTableQuery = `
       INSERT INTO space_tables (space_id, name, table_position)
-      VALUES ($1, $2, $3);
+      VALUES ($1, $2, $3)
+      RETURNING *
     `;
-    const rawTable = await client.query(spaceTableQuery, [spaceId, tableName, tableIndex]);
+    const rawTable = (await client.query(spaceTableQuery, [spaceId, tableName, tableIndex])).rows[0];
 
     await normalizeTablePositions(spaceId, client)
 

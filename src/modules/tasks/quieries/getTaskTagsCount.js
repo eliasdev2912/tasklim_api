@@ -3,7 +3,7 @@ const runTransaction = require('../../../utilities/runTransaction');
 
 
 
-const getTagTaskCount = async (tagId, clientArg = pool) => {
+const getTaskTagsCount = async (tagId, clientArg = pool) => {
   return runTransaction(clientArg, async (client) => {
     const query = `
     SELECT COUNT(*) AS count
@@ -16,4 +16,4 @@ const getTagTaskCount = async (tagId, clientArg = pool) => {
   })
 };
 
-module.exports = getTagTaskCount
+module.exports = getTaskTagsCount

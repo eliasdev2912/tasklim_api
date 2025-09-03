@@ -7,7 +7,7 @@ const { teamSchema } = require('../teams/teamSchema')
 
 
 const spaceSchema = Joi.object({
-    metadata: Joi.object({
+    space: Joi.object({
         id: Joi.string().guid({version: 'uuidv4'}).required(),
         space_name: Joi.string().trim().min(1).required(),
         space_description: Joi.string().trim().min(1).required(),

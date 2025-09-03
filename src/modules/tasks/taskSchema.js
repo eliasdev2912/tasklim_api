@@ -14,9 +14,9 @@ const taskSchema = Joi.object({
   }).required(),
   content: Joi.object({
     title: Joi.string().trim().min(1).required(),
-    description: Joi.string().required(),
-    body: Joi.string().required(),
-    due_date: Joi.date().required()
+    description: Joi.string().allow('').required(),
+    body: Joi.string().allow('').required(),
+    due_date: Joi.date().allow(null).required()
   }).required(),
   relations: Joi.object({
     table_id: Joi.string().guid({version: 'uuidv4'}).required(),

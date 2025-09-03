@@ -1,40 +1,45 @@
+const Joi = require('joi');
 const runTransaction = require('../../../utilities/runTransaction');
+const { teamSchema } = require('../teamSchema');
 
 
 const getSpaceTeams = async (spaceId, clientArg) => {
   return runTransaction(clientArg, async (client) => {
 
-  const teamsQuery = `SELECT * FROM teams WHERE space_id = $1`;
-  const membersQuery = `
+    const teamsQuery = `
   SELECT
-    tmi.team_id,
-    u.id AS user_id,
-    u.username,
-    u.avatarurl,
-    mi.user_rol AS role
-  FROM team_member_instances tmi
-  JOIN users u ON tmi.user_id = u.id
-  JOIN members_instances mi ON mi.user_id = u.id AND mi.space_id = $1
-  WHERE tmi.team_id IN (
-    SELECT id FROM teams WHERE space_id = $1
-  );
+  t.id,
+  t.name,
+  t.color,
+  t.description,
+  t.banner_url,
+  COALESCE(json_agg(
+    json_build_object(
+      'id', u.id,
+      'username', u.username,
+      'email', u.email,
+      'avatarurl', u.avatarurl,
+      'role', mi.user_rol
+    )
+  ) FILTER (WHERE u.id IS NOT NULL), '[]') AS members
+FROM teams t
+LEFT JOIN team_member_instances tmi ON tmi.team_id = t.id
+LEFT JOIN users u ON tmi.user_id = u.id
+LEFT JOIN members_instances mi ON mi.user_id = u.id AND mi.space_id = $1
+WHERE t.space_id = $1
+GROUP BY t.id;
 `;
 
+
     const teamsResult = await client.query(teamsQuery, [spaceId]);
-    const teams = teamsResult.rows;
+    const rawTeams = teamsResult.rows;
 
-    const membersResult = await client.query(membersQuery, [spaceId]);
-    const allMembers = membersResult.rows;
+    // Validar esquema de 'teams'
+    const teamArraySchema = Joi.array().items(teamSchema).default([]).required()
+    const {error, value: teams} = teamArraySchema.validate(rawTeams)
+    if(error) throw error
 
-    const teamsWithMembers = teams.map(team => {
-      const members = allMembers.filter(m => m.team_id === team.id);
-      return {
-        ...team,
-        members,
-      };
-    });
-
-    return teamsWithMembers
+    return teams
   })
 }
 

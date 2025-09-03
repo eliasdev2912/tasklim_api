@@ -1,4 +1,5 @@
 // modules/tasks/listeners/notifyAdmins.js
+const runTransaction = require('../../../utilities/runTransaction');
 const eventBus = require('../../event_bus/eventBus');
 const getSpaceMembers = require('../../member_instances/queries/getSpaceMembers');
 const spaceExistsById = require('../../spaces/validations/spaceExistsById');
@@ -8,21 +9,21 @@ const taskExistsById = require('../validations/taskExistsById');
 
 function onTaskCreatedSetUnreads() {
   eventBus.on('taskCreatedSetUnreads', async (payload) => {
-    const {spaceId, task} = payload
+    const { spaceId, task, clientArg } = payload
 
-    try {
+    return runTransaction(clientArg, async (client) => {
       // Validaciones
       await Promise.all([
-        spaceExistsById.error(spaceId),
-        taskExistsById.error(task.metadata.id)
+        spaceExistsById.error(spaceId, client),
+        taskExistsById.error(task.metadata.id, client)
       ])
 
       // Obtener todos los miembros del espacio
-      const teamMembers = await getSpaceMembers(spaceId);
+      const teamMembers = await getSpaceMembers(spaceId, client);
 
       // Validar existencia de todos los miembros
       await Promise.all(
-        teamMembers.map(member => userExistsById.error(member.id))
+        teamMembers.map(member => userExistsById.error(member.id, client))
       );
 
       // Filtrar al creador y crear registros "unread" para los demás
@@ -33,13 +34,10 @@ function onTaskCreatedSetUnreads() {
       // Insertar registros de manera paralela
       await Promise.all(
         membersExceptCreator.map(member =>
-          markTaskUnread(task.metadata.id, member.id, 'created')
+          markTaskUnread(task.metadata.id, member.id, 'created', client)
         )
       );
-
-    } catch (err) {
-      throw err
-    }
+    })
   });
 }
 

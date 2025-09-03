@@ -6,7 +6,7 @@ const getTaskById = require('../quieries/getTaskById');
 
 const setTaskContent = async (spaceId, taskId, newTitle, newDescription, newBody, updateAuthorId, clientArg) => {
   return runTransaction(clientArg, async (client) => {
-     const query = `
+    const query = `
   UPDATE tasks
   SET 
    title = $2,
@@ -14,11 +14,11 @@ const setTaskContent = async (spaceId, taskId, newTitle, newDescription, newBody
    body = $4,
    updated_at = NOW()
   WHERE id = $1;
-  `
+    `
 
     await client.query(query, [taskId, newTitle, newDescription, newBody])
     const updatedTask = await getTaskById(taskId, client)
-    eventBus.emit('taskUpdated', {task: updatedTask, updateAuthorId, spaceId})
+    eventBus.emit('taskUpdated', {task: updatedTask, updateAuthorId, spaceId, clientArg: client})
     return updatedTask
   })
 }

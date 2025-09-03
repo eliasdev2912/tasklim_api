@@ -6,11 +6,18 @@ const { teamSchema } = require('../teamSchema');
 
 const getTeamById = async (teamId, clientArg) => {
   return runTransaction(clientArg, async (client) => {
-  const teamQuery = `SELECT * FROM teams WHERE id = $1`;
+  const teamQuery = `SELECT 
+  id,
+  name,
+  color,
+  description,
+  banner_url
+  FROM teams WHERE id = $1`;
   const membersQuery = `
     SELECT
-      u.id AS user_id,
+      u.id,
       u.username,
+      u.email,
       u.avatarurl,
       mi.user_rol AS role
     FROM team_member_instances tmi
@@ -33,6 +40,7 @@ const getTeamById = async (teamId, clientArg) => {
 
     const teamObject = {...rawTeam, members}
 
+    // Validar esquema teamSchema
     const {error, value: team} = teamSchema.validate(teamObject)
     if(error) throw error
 

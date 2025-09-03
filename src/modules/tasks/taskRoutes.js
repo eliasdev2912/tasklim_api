@@ -3,20 +3,33 @@ const router = express.Router();
 
 require('dotenv').config();
 
+// Middlewares
+const verifyToken = require('../../../middlewares/authMiddlewares.js');
+const ensureSpaceMember = require('../../../middlewares/spaceMiddlewares.js');
+
+// Event bus
+const onTaskCreatedSetUnreads = require('./listeners/onTaskCreatedSetUnreads')
+const onTaskUpdatedSetUnreads = require('./listeners/onTaskUpdatedSetUnreads')
+
+// Validation functions
 const tableExistsById = require('../tables/validations/tableExistsById.js');
-const createTask = require('./actions/createTask.js');
+const teamExistsById = require('../teams/validations/teamExistsById.js');
 const taskExistsById = require('./validations/taskExistsById.js');
+
+// Utilities
+const createTask = require('./actions/createTask.js');
 const deleteTaskById = require('./actions/deleteTaskById.js');
 const getTaskById = require('./quieries/getTaskById.js');
 const setTaskContent = require('./actions/setTaskContent.js');
 const changeTaskTable = require('./actions/changeTaskTable.js');
 const addAssignee = require('./actions/addAssignee.js');
-const verifyToken = require('../../../middlewares/authMiddlewares.js');
-const ensureSpaceMember = require('../../../middlewares/spaceMiddlewares.js');
-const teamExistsById = require('../teams/validations/teamExistsById.js');
 const deleteAssignee = require('./actions/deleteAssignee.js');
 const markTaskRead = require('./actions/markTaskRead.js');
 
+
+// Run Events
+onTaskCreatedSetUnreads();
+onTaskUpdatedSetUnreads();
 
 
 
@@ -88,6 +101,8 @@ router.post('/edit/content/:space_id', verifyToken, ensureSpaceMember, async (re
 
 router.post('/edit/table/:space_id', verifyToken, ensureSpaceMember, async (req, res, next) => {
   const { taskId, newTableId } = req.body
+  const userId = req.user.id
+  const spaceId = req.params.space_id
 
   try {
     await Promise.all([
@@ -95,7 +110,7 @@ router.post('/edit/table/:space_id', verifyToken, ensureSpaceMember, async (req,
       tableExistsById.error(newTableId)
     ])
 
-    const updatedTask = await changeTaskTable(taskId, newTableId)
+    const updatedTask = await changeTaskTable(taskId, newTableId, userId, spaceId)
 
     return res.status(200).json(updatedTask)
 
