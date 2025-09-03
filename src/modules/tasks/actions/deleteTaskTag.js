@@ -1,6 +1,6 @@
 const runTransaction = require('../../../utilities/runTransaction');
 const touchTask = require('./touchTask');
-const getTaskTagsCount = require('../quieries/getTaskTagsCount');
+const getTagsCountForTask = require('../../tags/queries/getTagsCountForTask');
 
 
 
@@ -14,7 +14,7 @@ const deleteTaskTag = async (taskId, tagId, clientArg) => {
     await client.query(deleteTaskTagQuery, [tagId, taskId]);
 
     // 2️⃣ Verifica cuántas quedan después de borrarla
-    const tagTaskCount = await getTaskTagsCount(tagId, client);
+    const tagTaskCount = await getTagsCountForTask(tagId, client);
     if (tagTaskCount == 0) {
       // Si quedó huérfano: eliminar tag
       const deleteTagQuery = `DELETE FROM tags WHERE id = $1`;
