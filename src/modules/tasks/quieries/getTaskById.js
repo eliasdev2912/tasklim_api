@@ -2,7 +2,7 @@ const { NotFoundError } = require('../../../utilities/errorsUtilities');
 const runTransaction = require('../../../utilities/runTransaction');
 const getTaskComments = require('../../comments/queries/getCommentsByTaskId');
 const { taskSchema } = require('../taskSchema');
-const getTaskAssignees = require('./getTaskAssignees');
+const getTeamsByTaskId = require('../../teams/queries/getTeamsByTaskId');
 
 
 
@@ -51,7 +51,7 @@ WHERE tt.task_id = $1;
     const metadata = (await client.query(taskMetadataQuery, [taskId])).rows[0];
     const tableResult = (await client.query(tableQuery, [taskId])).rows[0].table_id
     const tagsResult = (await client.query(tagsQuery, [taskId])).rows
-    const assignees = await getTaskAssignees(taskId, client)
+    const assignees = await getTeamsByTaskId(taskId, client)
     const comments = await getTaskComments(taskId, client);
 
     const relations = { table_id: tableResult, tags: tagsResult, comments, assignees }

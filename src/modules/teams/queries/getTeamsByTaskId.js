@@ -1,9 +1,9 @@
 const Joi = require("joi")
 const runTransaction = require("../../../utilities/runTransaction")
-const { teamSchema } = require("../../teams/teamSchema")
+const { teamSchema } = require("../teamSchema")
 
 
-const getTaskAssignees = (taskId, clientArg) => {
+const getTeamsByTaskId = (taskId, clientArg) => {
     return runTransaction(clientArg, async (client) => {
         const assigneesQuery = `
 SELECT
@@ -44,4 +44,4 @@ GROUP BY tea.id;
     })
 }
 
-module.exports = getTaskAssignees
+module.exports = getTeamsByTaskId
