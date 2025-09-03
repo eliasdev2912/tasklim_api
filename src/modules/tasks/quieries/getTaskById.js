@@ -1,6 +1,6 @@
 const { NotFoundError } = require('../../../utilities/errorsUtilities');
 const runTransaction = require('../../../utilities/runTransaction');
-const getTaskComments = require('../../comments/queries/getTaskComments');
+const getTaskComments = require('../../comments/queries/getCommentsByTaskId');
 const { taskSchema } = require('../taskSchema');
 const getTaskAssignees = require('./getTaskAssignees');
 
