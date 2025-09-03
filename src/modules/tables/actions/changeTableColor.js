@@ -1,5 +1,5 @@
 const runTransaction = require('../../../utilities/runTransaction');
-const findTableById = require('../queries/findTableById');
+const getTableById = require('../queries/getTableById');
 
 
 const changeTableColor = async (newColor, tableId, clientArg) => {
@@ -12,7 +12,7 @@ const changeTableColor = async (newColor, tableId, clientArg) => {
 
     await client.query(query, [newColor, tableId])
 
-    const updatedTable = await findTableById(tableId, client)
+    const updatedTable = await getTableById(tableId, client)
 
     return updatedTable
   })

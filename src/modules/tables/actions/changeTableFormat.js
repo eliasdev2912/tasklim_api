@@ -1,5 +1,5 @@
 const runTransaction = require('../../../utilities/runTransaction');
-const findTableById = require('../queries/findTableById')
+const getTableById = require('../queries/getTableById')
 const Joi = require('joi')
 
 
@@ -20,7 +20,7 @@ const changeTableFormat = async (tableId, rawNewFormat, clientArg) => {
 
     await client.query(tableQuery, [newFormat, tableId])
 
-    const updatedTable = await findTableById(tableId, client)
+    const updatedTable = await getTableById(tableId, client)
     return updatedTable
   })
 }

@@ -1,5 +1,5 @@
 const runTransaction = require('../../../utilities/runTransaction');
-const findTableById = require('../queries/findTableById');
+const getTableById = require('../queries/getTableById');
 
 
 const changeTableName = async (tableId, newTableName, clientArg) => {
@@ -11,7 +11,7 @@ const changeTableName = async (tableId, newTableName, clientArg) => {
       RETURNING *;
         `;
         await client.query(query, [newTableName, tableId]);
-        const updatedTable = await findTableById(tableId, client)
+        const updatedTable = await getTableById(tableId, client)
 
         return updatedTable
     })

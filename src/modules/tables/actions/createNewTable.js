@@ -1,5 +1,4 @@
-const findTableById = require('../queries/findTableById')
-const { v4: uuidv4 } = require('uuid');
+const getTableById = require('../queries/getTableById')
 const normalizeTablePositions = require('./normalizeTablePositions');
 const runTransaction = require('../../../utilities/runTransaction');
 
@@ -21,7 +20,7 @@ const createNewTable = async (spaceId, tableName, clientArg) => {
 
     await normalizeTablePositions(spaceId, client)
 
-    return await findTableById(rawTable.id, client);
+    return await getTableById(rawTable.id, client);
   })
 };
 

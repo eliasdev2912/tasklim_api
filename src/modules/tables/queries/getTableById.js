@@ -3,7 +3,7 @@ const runTransaction = require('../../../utilities/runTransaction')
 const { tableSchema } = require('../tableSchema')
 
 
-const findTableById = async (tableId, clientArg = pool) => {
+const getTableById = async (tableId, clientArg = pool) => {
   return runTransaction(clientArg, async (client) => {
     const query = `
         SELECT * FROM space_tables
@@ -19,4 +19,4 @@ const findTableById = async (tableId, clientArg = pool) => {
   })
 }
 
-module.exports = findTableById
+module.exports = getTableById
