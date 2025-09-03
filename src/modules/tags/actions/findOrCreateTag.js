@@ -1,8 +1,7 @@
 const { ConflictError } = require('../../../utilities/errorsUtilities');
 const runTransaction = require('../../../utilities/runTransaction');
 const touchTask = require('../../tasks/actions/touchTask');
-const findTagByName = require('../queries/findTagByName');
-const { v4: uuidv4 } = require('uuid');
+const getTagByName = require('../queries/getTagByName');
 
 
 
@@ -11,7 +10,7 @@ const findOrCreateTag = async (spaceId, taskId, tagName, tagColor, clientArg) =>
   return runTransaction(clientArg, async (client) => {
     const upperCaseTagName = tagName.toUpperCase()
 
-    const existingTag = await findTagByName(upperCaseTagName, spaceId, client)
+    const existingTag = await getTagByName(upperCaseTagName, spaceId, client)
 
     if (existingTag != null) {
       const tagInTaskQuery = `
