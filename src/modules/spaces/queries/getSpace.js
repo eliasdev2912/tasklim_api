@@ -1,7 +1,7 @@
 const runTransaction = require('../../../utilities/runTransaction');
 const getTagsBySpaceId = require('../../tags/queries/getTagsBySpaceId');
 const getTasksBySpaceId = require('../../tasks/quieries/getTasksBySpaceId');
-const getSpaceTeams = require('../../teams/queries/getSpaceTeams');
+const getTeamsBySpaceId = require('../../teams/queries/getTeamsBySpaceId');
 const getSpaceMembers = require('../../member_instances/queries/getSpaceMembers');
 const { spaceSchema } = require('../spaceSchema');
 
@@ -24,7 +24,7 @@ const getSpace = async (spaceId, clientArg) => {
     `
     const tasks = await getTasksBySpaceId(spaceId, client)
     const tags = await getTagsBySpaceId(spaceId, client)
-    const teams = await getSpaceTeams(spaceId, client)
+    const teams = await getTeamsBySpaceId(spaceId, client)
     const members = await getSpaceMembers(spaceId, client)
 
     const tablesResult = await client.query(tablesQuery, [spaceId])

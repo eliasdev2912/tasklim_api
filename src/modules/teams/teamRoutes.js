@@ -8,7 +8,7 @@ const upload = require('../../../middlewares/s3Uploader.js'); // importa el midd
 
 const { BadRequestError } = require('../../utilities/errorsUtilities.js');
 const createNewTeam = require('./actions/createNewTeam.js');
-const getSpaceTeams = require('./queries/getSpaceTeams.js');
+const getTeamsBySpaceId = require('./queries/getTeamsBySpaceId.js');
 const userExistsById = require('../users/validations/userExistsById.js');
 
 
@@ -68,7 +68,7 @@ router.get('/get/space_teams/:space_id', verifyToken, ensureSpaceMember, async (
   const spaceId = req.spaceId
 
   try {
-    const teams = getSpaceTeams(spaceId)
+    const teams = getTeamsBySpaceId(spaceId)
 
     return res.status(200).json(teams)
   } catch (error) {

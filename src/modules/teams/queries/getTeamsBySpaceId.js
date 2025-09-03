@@ -3,7 +3,7 @@ const runTransaction = require('../../../utilities/runTransaction');
 const { teamSchema } = require('../teamSchema');
 
 
-const getSpaceTeams = async (spaceId, clientArg) => {
+const getTeamsBySpaceId = async (spaceId, clientArg) => {
   return runTransaction(clientArg, async (client) => {
 
     const teamsQuery = `
@@ -44,4 +44,4 @@ GROUP BY t.id;
 }
 
 
-module.exports = getSpaceTeams
+module.exports = getTeamsBySpaceId
