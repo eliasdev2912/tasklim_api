@@ -1,5 +1,5 @@
 const runTransaction = require('../../../utilities/runTransaction');
-const getSpaceTags = require('../../tags/queries/getSpaceTags');
+const getTagsBySpaceId = require('../../tags/queries/getTagsBySpaceId');
 const getTasksBySpaceId = require('../../tasks/quieries/getTasksBySpaceId');
 const getSpaceTeams = require('../../teams/queries/getSpaceTeams');
 const getSpaceMembers = require('../../member_instances/queries/getSpaceMembers');
@@ -23,7 +23,7 @@ const getSpace = async (spaceId, clientArg) => {
       ORDER BY table_position ASC;      
     `
     const tasks = await getTasksBySpaceId(spaceId, client)
-    const tags = await getSpaceTags(spaceId, client)
+    const tags = await getTagsBySpaceId(spaceId, client)
     const teams = await getSpaceTeams(spaceId, client)
     const members = await getSpaceMembers(spaceId, client)
 

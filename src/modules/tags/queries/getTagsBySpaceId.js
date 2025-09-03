@@ -4,7 +4,7 @@ const runTransaction = require('../../../utilities/runTransaction');
 const { tagSchema } = require('../tagSchema');
 
 
-const getSpaceTags = async (spaceId, clientArg = pool) => {
+const getTagsBySpaceId = async (spaceId, clientArg = pool) => {
   return runTransaction(clientArg, async(client) => {
     const query = `
     SELECT * FROM tags WHERE space_id = $1;
@@ -21,4 +21,4 @@ const getSpaceTags = async (spaceId, clientArg = pool) => {
 }
 
 
-module.exports = getSpaceTags
+module.exports = getTagsBySpaceId
